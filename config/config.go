@@ -72,7 +72,7 @@ func (c *Conf) CreateJournalPath() error {
 	if !journalPathExists {
 		err := os.MkdirAll(c.JournalPath, 0755)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
@@ -91,7 +91,7 @@ func (c *Conf) SaveConfig() error {
 	if !confPathExists {
 		err := os.MkdirAll(c.ConfPath, 0755)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		conf = ini.Empty()
 	}
@@ -106,6 +106,11 @@ func (c *Conf) SaveConfig() error {
 	}
 
 	if err = conf.SaveTo(filepath.Join(AppConfDir, ConfFileName)); err != nil {
+		return err
+	}
+
+	err = c.CreateJournalPath()
+	if err != nil {
 		return err
 	}
 
