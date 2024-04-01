@@ -24,7 +24,7 @@ func (s *SetupModel) NewSetup() error {
 			huh.NewInput().
 				Value(&path).
 				Title("Where would you like to store your journal?").
-				Placeholder(config.HomeDir).
+				Placeholder(config.Home).
 				Description("This is the path on the filesystem where you'll store your journal."),
 		),
 	)
