@@ -3,22 +3,47 @@ package main
 import (
 	"log"
 
+	//"github.com/never00rei/a7/config"
+	"github.com/never00rei/a7/config"
 	"github.com/never00rei/a7/forms"
+	"github.com/never00rei/a7/utils"
 )
 
 func main() {
+	var configuration *config.Conf
 	var setup forms.SetupModel
 	var note forms.NoteModel
 	var err error
 
-	err = setup.NewSetup()
+	configPath, err := config.BuildConfPath(config.Home, config.XdgConfigHome)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Printf("The path you chose was: %s", setup.Path)
+	configPathExists, err := utils.PathExists(configPath)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	err = note.TakeNote()
+	if configPathExists {
+		configuration, err = config.LoadConf()
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		err = setup.NewSetup()
+		if err != nil {
+			log.Fatal(err)
+		}
+		configuration = config.NewConf(setup.Path)
+		err = configuration.SaveConfig()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	// Pass in configuration.JournalPath as the save point in "TakeNote".
+	err = note.TakeNote(configuration.JournalPath)
 	if err != nil {
 		log.Fatal(err)
 	}
