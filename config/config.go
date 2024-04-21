@@ -2,7 +2,6 @@ package config
 
 import (
 	"errors"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -22,8 +21,8 @@ var (
 )
 
 type Conf struct {
-	ConfPath    string
 	JournalPath string
+	FirstSetup  bool
 }
 
 func BuildConfPath(homeDir, xdgConfigHomeDir string) (string, error) {
@@ -41,21 +40,10 @@ func BuildConfPath(homeDir, xdgConfigHomeDir string) (string, error) {
 	return path, HomeConfigEnvVarNotSetError
 }
 
-func NewConf(journalPath string) Conf {
-	confPath, err := BuildConfPath(Home, XdgConfigHome)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return Conf{
-		ConfPath:    confPath,
+func NewConf(journalPath string) *Conf {
+	return &Conf{
 		JournalPath: journalPath,
 	}
-}
-
-func (c *Conf) ConfPathExists() (bool, error) {
-	exists, err := utils.PathExists(c.ConfPath)
-	return exists, err
 }
 
 func (c *Conf) JournalPathExists() (bool, error) {
@@ -83,13 +71,18 @@ func (c *Conf) SaveConfig() error {
 	var conf *ini.File
 	var err error
 
-	confPathExists, err := c.ConfPathExists()
+	configPath, err := BuildConfPath(Home, XdgConfigHome)
+	if err != nil {
+		return err
+	}
+
+	confPathExists, err := utils.PathExists(configPath)
 	if err != nil {
 		return err
 	}
 
 	if !confPathExists {
-		err := os.MkdirAll(c.ConfPath, 0755)
+		err := os.MkdirAll(configPath, 0755)
 		if err != nil {
 			return err
 		}
@@ -105,7 +98,7 @@ func (c *Conf) SaveConfig() error {
 		return err
 	}
 
-	if err = conf.SaveTo(filepath.Join(AppConfDir, ConfFileName)); err != nil {
+	if err = conf.SaveTo(filepath.Join(configPath, ConfFileName)); err != nil {
 		return err
 	}
 
@@ -115,4 +108,29 @@ func (c *Conf) SaveConfig() error {
 	}
 
 	return nil
+}
+
+func LoadConf() (*Conf, error) {
+	confPath, err := BuildConfPath(Home, XdgConfigHome)
+	if err != nil {
+		return nil, err
+	}
+
+	confFilePath := filepath.Join(confPath, ConfFileName)
+
+	confFile, err := ini.Load(confFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	section, err := confFile.GetSection("Settings")
+	if err != nil {
+		return nil, err
+	}
+
+	journalPath := section.Key("journal_path").String()
+
+	conf := NewConf(journalPath)
+
+	return conf, nil
 }

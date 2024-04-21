@@ -47,7 +47,7 @@ type NoteModel struct {
 	Form      *huh.Form
 }
 
-func (n *NoteModel) TakeNote() error {
+func (n *NoteModel) TakeNote(journalPath string) error {
 	var (
 		currentDate          time.Time = time.Now()
 		currentDateFormatted           = currentDate.Format("2006-01-02_15-04")
