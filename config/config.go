@@ -16,12 +16,14 @@ var (
 	XdgConfigHome string = os.Getenv("XDG_CONFIG_HOME")
 	AppConfDir    string = ".a7-journal"
 	ConfFileName  string = "conf.ini"
+	SshPath       string = filepath.Join(Home, ".ssh")
 
 	HomeConfigEnvVarNotSetError error = errors.New("home and xdg_config_home are not set.")
 )
 
 type Conf struct {
 	JournalPath string
+	SshKeyFile  string
 	FirstSetup  bool
 }
 
@@ -40,9 +42,10 @@ func BuildConfPath(homeDir, xdgConfigHomeDir string) (string, error) {
 	return path, HomeConfigEnvVarNotSetError
 }
 
-func NewConf(journalPath string) *Conf {
+func NewConf(journalPath, sshKeyPath string) *Conf {
 	return &Conf{
 		JournalPath: journalPath,
+		SshKeyFile:  sshKeyPath,
 	}
 }
 
@@ -98,6 +101,10 @@ func (c *Conf) SaveConfig() error {
 		return err
 	}
 
+	if _, err = section.NewKey("ssh_key_file", c.SshKeyFile); err != nil {
+		return err
+	}
+
 	if err = conf.SaveTo(filepath.Join(configPath, ConfFileName)); err != nil {
 		return err
 	}
@@ -129,8 +136,9 @@ func LoadConf() (*Conf, error) {
 	}
 
 	journalPath := section.Key("journal_path").String()
+	sshKeyPath := section.Key("ssh_key_file").String()
 
-	conf := NewConf(journalPath)
+	conf := NewConf(journalPath, sshKeyPath)
 
 	return conf, nil
 }
