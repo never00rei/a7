@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 )
 
@@ -79,4 +80,10 @@ func PathExists(path string) (bool, error) {
 	}
 
 	return false, err
+}
+
+func SanitizeSpecialChars(input string) string {
+	re := regexp.MustCompile(`[^a-zA-Z0-9]`)
+	result := re.ReplaceAllString(input, "_")
+	return result
 }

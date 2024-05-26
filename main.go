@@ -35,7 +35,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		configuration = config.NewConf(setup.Path)
+		configuration = config.NewConf(setup.Path, setup.SshKeyPath)
 		err = configuration.SaveConfig()
 		if err != nil {
 			log.Fatal(err)
@@ -43,7 +43,12 @@ func main() {
 	}
 
 	// Pass in configuration.JournalPath as the save point in "TakeNote".
-	err = note.TakeNote(configuration.JournalPath)
+	err = note.TakeNote()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = note.SaveNote(configuration.JournalPath)
 	if err != nil {
 		log.Fatal(err)
 	}
