@@ -57,12 +57,15 @@ func (c *Conf) JournalPathExists() (bool, error) {
 func (c *Conf) CreateJournalPath() error {
 	journalPathExists, err := c.JournalPathExists()
 	if err != nil {
+		print("JournalPathExists: " + c.JournalPath)
 		return err
 	}
 
 	if !journalPathExists {
 		err := os.MkdirAll(c.JournalPath, 0755)
 		if err != nil {
+			print("error building journal path")
+			print(c.JournalPath)
 			return err
 		}
 	}

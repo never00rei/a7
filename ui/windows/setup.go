@@ -1,6 +1,8 @@
 package windows
 
 import (
+	"path/filepath"
+
 	"github.com/charmbracelet/huh"
 	"github.com/never00rei/a7/config"
 )
@@ -11,9 +13,10 @@ type SetupModel struct {
 	Form       *huh.Form
 }
 
-func (s *SetupModel) NewSetup() error {
+func (s *SetupModel) NewSetup() (*config.Conf, error) {
 	var path string
 	var sshkeypath string
+	var conf *config.Conf
 
 	s.Form = huh.NewForm(
 		huh.NewGroup(
@@ -21,6 +24,7 @@ func (s *SetupModel) NewSetup() error {
 				Value(&path).
 				Title("Where would you like to store your journal?").
 				Placeholder(config.Home).
+				Suggestions([]string{filepath.Join(config.Home, "Documents", "journal/")}).
 				Description("This is the path on the filesystem where you'll store your journal."),
 			huh.NewFilePicker().
 				Title("SSH Key Path").
@@ -35,18 +39,18 @@ func (s *SetupModel) NewSetup() error {
 
 	err := s.Form.Run()
 	if err != nil {
-		return err
+		return conf, err
 	}
 
 	s.Path = path
 	s.SshKeyPath = sshkeypath
 
-	conf := config.NewConf(s.Path, s.SshKeyPath)
+	conf = config.NewConf(path, sshkeypath)
 
 	err = conf.SaveConfig()
 	if err != nil {
-		return err
+		return conf, err
 	}
 
-	return nil
+	return conf, nil
 }
