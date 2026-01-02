@@ -5,12 +5,13 @@ import (
 
 	"github.com/never00rei/a7/config"
 	"github.com/never00rei/a7/forms"
+	"github.com/never00rei/a7/ui/windows"
 	"github.com/never00rei/a7/utils"
 )
 
 func main() {
 	var configuration *config.Conf
-	var setup forms.SetupModel
+	var setup windows.SetupModel
 	var note forms.NoteModel
 	var err error
 
@@ -34,11 +35,6 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		configuration = config.NewConf(setup.Path, setup.SshKeyPath)
-		err = configuration.SaveConfig()
-		if err != nil {
-			log.Fatal(err)
-		}
 	}
 
 	// Pass in configuration.JournalPath as the save point in "TakeNote".
@@ -51,5 +47,4 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }
