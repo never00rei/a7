@@ -29,7 +29,7 @@ func TestSaveConfigExistingDirNoFile(t *testing.T) {
 		t.Fatalf("MkdirAll error: %v", err)
 	}
 
-	conf := NewConf(filepath.Join(tempDir, "journal"), filepath.Join(tempDir, "id_ed25519"), true)
+	conf := NewConf(filepath.Join(tempDir, "journal"), filepath.Join(tempDir, "id_ed25519"), filepath.Join(tempDir, "id_ed25519.pub"), true)
 	if err := conf.SaveConfig(); err != nil {
 		t.Fatalf("SaveConfig error: %v", err)
 	}
@@ -54,6 +54,9 @@ func TestSaveConfigExistingDirNoFile(t *testing.T) {
 	}
 	if got := section.Key("ssh_key_file").String(); got != conf.SshKeyFile {
 		t.Fatalf("ssh_key_file = %q, want %q", got, conf.SshKeyFile)
+	}
+	if got := section.Key("ssh_pub_key").String(); got != conf.SshPubKey {
+		t.Fatalf("ssh_pub_key = %q, want %q", got, conf.SshPubKey)
 	}
 	if got := section.Key("encrypt").MustBool(false); got != conf.Encrypt {
 		t.Fatalf("encrypt = %v, want %v", got, conf.Encrypt)

@@ -1,8 +1,8 @@
 package ui
 
 func (m AppModel) viewWalkthroughStorage() string {
-	bodyText := "Notes are plain Markdown files you control.\n" +
-		"Pick a folder on disk and A7 will write your journal there.\n\n" +
+	bodyText := "Journal entries are plain Markdown files you control.\n" +
+		"Pick a folder on disk and A7 will write your journal entries there.\n\n" +
 		"Example: ~/Documents/journal/"
 
 	formView := ""
@@ -13,6 +13,6 @@ func (m AppModel) viewWalkthroughStorage() string {
 	if formView != "" {
 		content = bodyText + "\n\n" + formView
 	}
-	pane := m.titledPaneWithWidth("How A7 Stores Notes", content, m.primaryPaneWidth())
+	pane := m.titledPaneWithWidth("How A7 Stores Journals", content, m.primaryPaneWidth())
 	return m.centerContent(pane)
 }

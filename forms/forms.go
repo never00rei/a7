@@ -1,10 +1,10 @@
 package forms
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/charmbracelet/huh"
+	"github.com/never00rei/a7/journal"
 	"github.com/never00rei/a7/utils"
 )
 
@@ -31,18 +31,18 @@ func (n *NoteModel) TakeNote() error {
 	n.Form = huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
-				Title("What's the name of your note?").
+				Title("What's the name of your journal?").
 				Value(&title).
-				Placeholder("My Note"),
+				Placeholder("My Journal"),
 
 			huh.NewConfirm().
-				Title("Is this note sensitive?").
+				Title("Is this journal sensitive?").
 				Value(&sensitive).
 				Affirmative("Yes").
 				Negative("No"),
 
 			huh.NewText().
-				Title("Your note for today:").
+				Title("Your journal for today:").
 				Value(&content).
 				Placeholder(randomPlaceholder).
 				CharLimit(25000).
@@ -64,12 +64,12 @@ func (n *NoteModel) TakeNote() error {
 }
 
 func (n *NoteModel) SaveNote(journalPath string) error {
-	sanitizedTitle := utils.SanitizeSpecialChars(n.Title)
-	filename := fmt.Sprintf("%s_%s.md", n.CurrentDateFormatted, sanitizedTitle)
+	created, err := time.Parse("2006-01-02_15-04", n.CurrentDateFormatted)
+	if err != nil {
+		created = time.Now()
+	}
 
-	markdown := fmt.Sprintf("# %s %s\n\n%s", n.CurrentDateFormatted, n.Title, n.Content)
-
-	utils.SaveFile(journalPath, filename, markdown)
-
-	return nil
+	service := journal.NewService(journalPath)
+	_, err = service.SaveNote(n.Title, n.Content, created)
+	return err
 }

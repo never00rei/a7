@@ -1,7 +1,7 @@
 package ui
 
 func (m AppModel) viewWalkthroughPrivacy() string {
-	bodyText := "Want encrypted notes? You can choose an SSH key now\n" +
+	bodyText := "Want encrypted journals? You can choose an SSH key now\n" +
 		"or skip and set it up later in settings."
 
 	formView := ""

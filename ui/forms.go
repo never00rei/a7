@@ -10,6 +10,7 @@ import (
 const (
 	storagePathKey = "journal_path"
 	sshKeyPathKey  = "ssh_key_path"
+	sshPubKeyPathKey = "ssh_pub_key_path"
 	encryptKey     = "encrypt"
 )
 
@@ -33,13 +34,13 @@ func newStorageForm(path *string, width int) *huh.Form {
 	return form
 }
 
-func newPrivacyForm(encrypt *bool, sshKeyPath *string, width int) *huh.Form {
+func newPrivacyForm(encrypt *bool, sshKeyPath *string, sshPubKeyPath *string, width int) *huh.Form {
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewConfirm().
 				Key(encryptKey).
 				Value(encrypt).
-				Title("Encrypt sensitive notes?").
+				Title("Encrypt sensitive journals?").
 				Affirmative("Yes").
 				Negative("No"),
 		),
@@ -47,13 +48,23 @@ func newPrivacyForm(encrypt *bool, sshKeyPath *string, width int) *huh.Form {
 			huh.NewFilePicker().
 				Key(sshKeyPathKey).
 				Value(sshKeyPath).
-				Title("SSH key path (optional)").
+				Title("SSH private key (required)").
 				CurrentDirectory(config.SshPath).
 				ShowHidden(true).
 				Picking(true).
 				FileAllowed(true).
 				Height(12).
-				Description("Choose an SSH key to encrypt sensitive notes."),
+				Description("Private key used to decrypt encrypted journals."),
+			huh.NewFilePicker().
+				Key(sshPubKeyPathKey).
+				Value(sshPubKeyPath).
+				Title("SSH public key (required)").
+				CurrentDirectory(config.SshPath).
+				ShowHidden(true).
+				Picking(true).
+				FileAllowed(true).
+				Height(12).
+				Description("Public key used to encrypt journal content."),
 		).WithHideFunc(func() bool {
 			if encrypt == nil {
 				return true
