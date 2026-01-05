@@ -18,7 +18,7 @@ var (
 	ConfFileName  string = "conf.ini"
 	SshPath       string = filepath.Join(Home, ".ssh")
 
-	HomeConfigEnvVarNotSetError error = errors.New("home and xdg_config_home are not set.")
+	ErrHomeConfigEnvVarNotSetError error = errors.New("home and xdg_config_home are not set")
 )
 
 type Conf struct {
@@ -39,7 +39,7 @@ func BuildConfPath(homeDir, xdgConfigHomeDir string) (string, error) {
 	}
 	// This is intentional, we don't want to return anything
 	// if none of the environment variables are set.
-	return path, HomeConfigEnvVarNotSetError
+	return path, ErrHomeConfigEnvVarNotSetError
 }
 
 func NewConf(journalPath, sshKeyPath string) *Conf {
@@ -57,12 +57,15 @@ func (c *Conf) JournalPathExists() (bool, error) {
 func (c *Conf) CreateJournalPath() error {
 	journalPathExists, err := c.JournalPathExists()
 	if err != nil {
+		print("JournalPathExists: " + c.JournalPath)
 		return err
 	}
 
 	if !journalPathExists {
 		err := os.MkdirAll(c.JournalPath, 0755)
 		if err != nil {
+			print("error building journal path")
+			print(c.JournalPath)
 			return err
 		}
 	}

@@ -5,12 +5,13 @@ import (
 
 	"github.com/never00rei/a7/config"
 	"github.com/never00rei/a7/forms"
+	"github.com/never00rei/a7/ui/windows"
 	"github.com/never00rei/a7/utils"
 )
 
 func main() {
 	var configuration *config.Conf
-	var setup forms.SetupModel
+	var setup windows.SetupModel
 	var note forms.NoteModel
 	var err error
 
@@ -30,12 +31,7 @@ func main() {
 			log.Fatal(err)
 		}
 	} else {
-		err = setup.NewSetup()
-		if err != nil {
-			log.Fatal(err)
-		}
-		configuration = config.NewConf(setup.Path, setup.SshKeyPath)
-		err = configuration.SaveConfig()
+		configuration, err = setup.NewSetup()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -51,5 +47,4 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }
