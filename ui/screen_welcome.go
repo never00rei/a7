@@ -2,7 +2,7 @@ package ui
 
 func (m AppModel) viewWelcome() string {
 	bodyText := "A7 is a calm space for daily journaling.\n" +
-		"Write in plain Markdown and keep notes on your machine.\n" +
+		"Write in plain Markdown and keep journals on your machine.\n" +
 		"Let's take 60 seconds to set things up.\n\n" +
 		"No accounts.\nNo cloud.\nJust you and your journal."
 

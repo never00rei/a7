@@ -44,12 +44,53 @@ func TestSaveLoadAndListNotes(t *testing.T) {
 	if loaded.Created != firstTime {
 		t.Fatalf("LoadNote created = %v, want %v", loaded.Created, firstTime)
 	}
-	if loaded.Content == "" {
-		t.Fatalf("LoadNote content empty")
+	if loaded.Encrypted {
+		t.Fatalf("LoadNote encrypted = true, want false")
+	}
+	if loaded.Content != "hello" {
+		t.Fatalf("LoadNote content = %q, want %q", loaded.Content, "hello")
+	}
+	if loaded.Updated.IsZero() {
+		t.Fatalf("LoadNote updated missing")
 	}
 
 	path := filepath.Join(root, firstFile)
 	if _, err := os.Stat(path); err != nil {
 		t.Fatalf("note file missing: %v", err)
+	}
+}
+
+func TestUpdateNotePreservesFilename(t *testing.T) {
+	root := t.TempDir()
+	svc := NewService(root)
+
+	created := time.Date(2024, 3, 4, 5, 6, 0, 0, time.UTC)
+	filename, err := svc.SaveNote("Original", "first", created)
+	if err != nil {
+		t.Fatalf("SaveNote: %v", err)
+	}
+
+	if err := svc.UpdateNote(filename, "Updated Title", "changed", created); err != nil {
+		t.Fatalf("UpdateNote: %v", err)
+	}
+
+	loaded, err := svc.LoadNote(filename)
+	if err != nil {
+		t.Fatalf("LoadNote: %v", err)
+	}
+	if loaded.Title != "Updated Title" {
+		t.Fatalf("Title = %q, want %q", loaded.Title, "Updated Title")
+	}
+	if loaded.Encrypted {
+		t.Fatalf("Encrypted = true, want false")
+	}
+	if loaded.Content != "changed" {
+		t.Fatalf("Content = %q, want %q", loaded.Content, "changed")
+	}
+	if loaded.Created != created {
+		t.Fatalf("Created = %v, want %v", loaded.Created, created)
+	}
+	if loaded.Updated.IsZero() {
+		t.Fatalf("Updated missing")
 	}
 }
