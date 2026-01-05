@@ -45,7 +45,7 @@ func (s *SetupModel) NewSetup() (*config.Conf, error) {
 	s.Path = path
 	s.SshKeyPath = sshkeypath
 
-	conf = config.NewConf(path, sshkeypath, false)
+	conf = config.NewConf(path, sshkeypath, "", false)
 
 	err = conf.SaveConfig()
 	if err != nil {
