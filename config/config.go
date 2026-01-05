@@ -87,12 +87,22 @@ func (c *Conf) SaveConfig() error {
 		return err
 	}
 
+	confFilePath := filepath.Join(configPath, ConfFileName)
 	if !confPathExists {
 		err := os.MkdirAll(configPath, 0755)
 		if err != nil {
 			return err
 		}
 		conf = ini.Empty()
+	} else {
+		conf, err = ini.Load(confFilePath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				conf = ini.Empty()
+			} else {
+				return err
+			}
+		}
 	}
 
 	section, err := conf.NewSection("Settings")
@@ -108,7 +118,7 @@ func (c *Conf) SaveConfig() error {
 		return err
 	}
 
-	if err = conf.SaveTo(filepath.Join(configPath, ConfFileName)); err != nil {
+	if err = conf.SaveTo(confFilePath); err != nil {
 		return err
 	}
 
