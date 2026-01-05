@@ -1,16 +1,20 @@
 package ui
 
-import "github.com/charmbracelet/lipgloss"
-
 func (m AppModel) viewSetup() string {
-	header := lipgloss.NewStyle().Bold(true).Padding(0, 2).Render("Setup")
+	journalPath := m.storagePath
+	if journalPath == "" {
+		journalPath = "Not set yet"
+	}
+	sshKeyPath := m.sshKeyPath
+	if sshKeyPath == "" {
+		sshKeyPath = "Not set"
+	}
 
-	bodyText := "Setup form goes here.\n" +
-		"Choose your journal folder and optional SSH key.\n\n" +
-		"Press enter to simulate setup complete."
+	bodyText := "Review your choices before finishing setup.\n\n" +
+		"Journal folder:\n" + journalPath + "\n\n" +
+		"SSH key:\n" + sshKeyPath + "\n\n" +
+		"Press enter to continue."
 
-	body := m.singlePane(bodyText)
-	footer := m.footer("")
-
-	return header + "\n" + body + footer
+	pane := m.titledPaneWithWidth("Setup Review", bodyText, m.primaryPaneWidth())
+	return m.centerContent(pane)
 }
