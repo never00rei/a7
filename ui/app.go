@@ -73,6 +73,7 @@ func NewAppModel() AppModel {
 	model.editorTitle.Placeholder = "Journal title"
 	model.editorBody = textarea.New()
 	model.editorBody.Placeholder = "Start writing..."
+	model.editorBody.CharLimit = 0
 	if model.screen == screenDashboard {
 		model = model.loadDashboardNotes()
 	}
