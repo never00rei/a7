@@ -10,6 +10,7 @@ import (
 const (
 	storagePathKey = "journal_path"
 	sshKeyPathKey  = "ssh_key_path"
+	encryptKey     = "encrypt"
 )
 
 func newStorageForm(path *string, width int) *huh.Form {
@@ -32,8 +33,16 @@ func newStorageForm(path *string, width int) *huh.Form {
 	return form
 }
 
-func newPrivacyForm(sshKeyPath *string, width int) *huh.Form {
+func newPrivacyForm(encrypt *bool, sshKeyPath *string, width int) *huh.Form {
 	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewConfirm().
+				Key(encryptKey).
+				Value(encrypt).
+				Title("Encrypt sensitive notes?").
+				Affirmative("Yes").
+				Negative("No"),
+		),
 		huh.NewGroup(
 			huh.NewFilePicker().
 				Key(sshKeyPathKey).
@@ -45,7 +54,12 @@ func newPrivacyForm(sshKeyPath *string, width int) *huh.Form {
 				FileAllowed(true).
 				Height(12).
 				Description("Choose an SSH key to encrypt sensitive notes."),
-		),
+		).WithHideFunc(func() bool {
+			if encrypt == nil {
+				return true
+			}
+			return !*encrypt
+		}),
 	).WithShowHelp(false)
 
 	if width > 0 {

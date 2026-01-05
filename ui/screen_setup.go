@@ -9,9 +9,14 @@ func (m AppModel) viewSetup() string {
 	if sshKeyPath == "" {
 		sshKeyPath = "Not set"
 	}
+	encryptStatus := "Disabled"
+	if m.encrypt {
+		encryptStatus = "Enabled"
+	}
 
 	bodyText := "Review your choices before finishing setup.\n\n" +
 		"Journal folder:\n" + journalPath + "\n\n" +
+		"Encryption:\n" + encryptStatus + "\n\n" +
 		"SSH key:\n" + sshKeyPath + "\n\n" +
 		"Press enter to continue."
 

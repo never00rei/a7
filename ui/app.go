@@ -24,6 +24,7 @@ type AppModel struct {
 	privacyForm *huh.Form
 	storagePath string
 	sshKeyPath  string
+	encrypt     bool
 	lastError   error
 }
 
@@ -33,7 +34,7 @@ func NewAppModel() AppModel {
 		sshKeyPath: config.SshPath,
 	}
 	model.storageForm = newStorageForm(&model.storagePath, 0)
-	model.privacyForm = newPrivacyForm(&model.sshKeyPath, 0)
+	model.privacyForm = newPrivacyForm(&model.encrypt, &model.sshKeyPath, 0)
 	return model
 }
 
@@ -61,6 +62,12 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.screen == screenWalkthroughPrivacy && msg.String() == "s" {
+			m.encrypt = false
+			m.sshKeyPath = ""
+			m.screen = screenSetup
+			return m, m.initActiveFormCmd()
+		}
 		switch msg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
@@ -86,7 +93,10 @@ func (m AppModel) saveConfigCmd() tea.Cmd {
 	journalPath := m.storagePath
 	sshKeyPath := m.sshKeyPath
 	return func() tea.Msg {
-		conf := config.NewConf(journalPath, sshKeyPath)
+		if !m.encrypt {
+			sshKeyPath = ""
+		}
+		conf := config.NewConf(journalPath, sshKeyPath, m.encrypt)
 		if err := conf.SaveConfig(); err != nil {
 			return err
 		}
@@ -118,7 +128,11 @@ func (m AppModel) updateActiveForm(msg tea.Msg) (AppModel, tea.Cmd, bool) {
 		model, cmd := m.privacyForm.Update(msg)
 		m.privacyForm = model.(*huh.Form)
 		if m.privacyForm.State == huh.StateCompleted {
+			m.encrypt = m.privacyForm.GetBool(encryptKey)
 			m.sshKeyPath = m.privacyForm.GetString(sshKeyPathKey)
+			if !m.encrypt {
+				m.sshKeyPath = ""
+			}
 			m.screen = nextScreen(m.screen)
 		}
 		if m.privacyForm.State == huh.StateAborted {
@@ -191,7 +205,7 @@ func (m AppModel) helpText() string {
 	case screenWelcome:
 		return "enter: begin  ctrl+c: quit"
 	case screenWalkthroughStorage, screenWalkthroughPrivacy:
-		return "enter/tab: next  shift+tab: back  ctrl+c: quit"
+		return "enter/tab: next  shift+tab: back  s: skip  ctrl+c: quit"
 	case screenDashboard:
 		return "ctrl+c: quit"
 	default:

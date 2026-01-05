@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -25,6 +26,7 @@ type Conf struct {
 	JournalPath string
 	SshKeyFile  string
 	FirstSetup  bool
+	Encrypt     bool
 }
 
 func BuildConfPath(homeDir, xdgConfigHomeDir string) (string, error) {
@@ -42,10 +44,11 @@ func BuildConfPath(homeDir, xdgConfigHomeDir string) (string, error) {
 	return path, ErrHomeConfigEnvVarNotSetError
 }
 
-func NewConf(journalPath, sshKeyPath string) *Conf {
+func NewConf(journalPath, sshKeyPath string, encrypt bool) *Conf {
 	return &Conf{
 		JournalPath: journalPath,
 		SshKeyFile:  sshKeyPath,
+		Encrypt:     encrypt,
 	}
 }
 
@@ -87,12 +90,22 @@ func (c *Conf) SaveConfig() error {
 		return err
 	}
 
+	confFilePath := filepath.Join(configPath, ConfFileName)
 	if !confPathExists {
 		err := os.MkdirAll(configPath, 0755)
 		if err != nil {
 			return err
 		}
 		conf = ini.Empty()
+	} else {
+		conf, err = ini.Load(confFilePath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				conf = ini.Empty()
+			} else {
+				return err
+			}
+		}
 	}
 
 	section, err := conf.NewSection("Settings")
@@ -108,7 +121,11 @@ func (c *Conf) SaveConfig() error {
 		return err
 	}
 
-	if err = conf.SaveTo(filepath.Join(configPath, ConfFileName)); err != nil {
+	if _, err = section.NewKey("encrypt", fmt.Sprintf("%t", c.Encrypt)); err != nil {
+		return err
+	}
+
+	if err = conf.SaveTo(confFilePath); err != nil {
 		return err
 	}
 
@@ -140,8 +157,9 @@ func LoadConf() (*Conf, error) {
 
 	journalPath := section.Key("journal_path").String()
 	sshKeyPath := section.Key("ssh_key_file").String()
+	encrypt := section.Key("encrypt").MustBool(false)
 
-	conf := NewConf(journalPath, sshKeyPath)
+	conf := NewConf(journalPath, sshKeyPath, encrypt)
 
 	return conf, nil
 }
