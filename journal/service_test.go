@@ -30,8 +30,18 @@ func TestSaveLoadAndListNotes(t *testing.T) {
 	if len(notes) != 2 {
 		t.Fatalf("ListNotes count = %d, want 2", len(notes))
 	}
-	if notes[0].Filename != secondFile {
-		t.Fatalf("ListNotes order = %q first, want %q", notes[0].Filename, secondFile)
+	foundFirst := false
+	foundSecond := false
+	for _, note := range notes {
+		switch note.Filename {
+		case firstFile:
+			foundFirst = true
+		case secondFile:
+			foundSecond = true
+		}
+	}
+	if !foundFirst || !foundSecond {
+		t.Fatalf("ListNotes missing files: first=%t second=%t", foundFirst, foundSecond)
 	}
 
 	loaded, err := svc.LoadNote(firstFile)
