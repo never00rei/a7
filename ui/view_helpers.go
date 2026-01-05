@@ -30,6 +30,14 @@ func (m AppModel) frameHeight() int {
 }
 
 func (m AppModel) twoPane(left, right string) string {
+	return m.twoPaneWithRatio(left, right, 0.5)
+}
+
+func (m AppModel) twoPaneWithRatio(left, right string, leftRatio float64) string {
+	return m.twoPaneWithRatioAndTitles("", "", left, right, leftRatio)
+}
+
+func (m AppModel) twoPaneWithRatioAndTitles(leftTitle, rightTitle, left, right string, leftRatio float64) string {
 	theme := currentTheme()
 	total := m.contentWidth()
 	gapWidth := 2
@@ -40,7 +48,14 @@ func (m AppModel) twoPane(left, right string) string {
 	if available < 0 {
 		available = 0
 	}
-	leftWidth := available / 2
+	availableHeight := m.paneContentHeight(m.bodyHeight())
+	if leftRatio < 0 {
+		leftRatio = 0
+	}
+	if leftRatio > 1 {
+		leftRatio = 1
+	}
+	leftWidth := int(float64(available) * leftRatio)
 	rightWidth := available - leftWidth
 
 	leftStyle := lipgloss.NewStyle().
@@ -55,9 +70,22 @@ func (m AppModel) twoPane(left, right string) string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(theme.PaneBorder).
 		Foreground(theme.Text)
+	if availableHeight > 0 {
+		leftStyle = leftStyle.Height(availableHeight)
+		rightStyle = rightStyle.Height(availableHeight)
+	}
+
+	leftPane := leftStyle.Render(left)
+	rightPane := rightStyle.Render(right)
+	if leftTitle != "" {
+		leftPane = m.injectBorderTitle(leftPane, leftTitle, lipgloss.RoundedBorder(), theme.PaneBorder)
+	}
+	if rightTitle != "" {
+		rightPane = m.injectBorderTitle(rightPane, rightTitle, lipgloss.RoundedBorder(), theme.PaneBorder)
+	}
 	gap := lipgloss.NewStyle().Width(gapWidth).Render("")
 
-	return lipgloss.JoinHorizontal(lipgloss.Top, leftStyle.Render(left), gap, rightStyle.Render(right))
+	return lipgloss.JoinHorizontal(lipgloss.Top, leftPane, gap, rightPane)
 }
 
 func (m AppModel) singlePane(content string) string {
@@ -71,17 +99,25 @@ func (m AppModel) singlePaneWithWidth(content string, totalWidth int) string {
 		totalWidth = m.contentWidth()
 	}
 	width := m.paneContentWidth(totalWidth)
+	height := m.paneContentHeight(m.bodyHeight())
 	style := lipgloss.NewStyle().
 		Width(width).
 		Padding(1, paddingX).
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(theme.PaneBorder).
 		Foreground(theme.Text)
+	if height > 0 {
+		style = style.Height(height)
+	}
 	return style.Render(content)
 }
 
 func (m AppModel) cardBorderX() int {
 	return lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).GetHorizontalBorderSize()
+}
+
+func (m AppModel) cardBorderY() int {
+	return lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).GetVerticalBorderSize()
 }
 
 func (m AppModel) centerContent(content string) string {
@@ -110,6 +146,27 @@ func (m AppModel) paneContentWidth(totalWidth int) int {
 		return 0
 	}
 	return width
+}
+
+func (m AppModel) paneContentHeight(totalHeight int) int {
+	paddingY := 1
+	borderY := m.cardBorderY()
+	height := totalHeight - (paddingY*2 + borderY)
+	if height < 0 {
+		return 0
+	}
+	return height
+}
+
+func (m AppModel) bodyHeight() int {
+	height := m.frameHeight()
+	if height <= 0 {
+		return 0
+	}
+	if height-1 < 0 {
+		return 0
+	}
+	return height - 1
 }
 
 func (m AppModel) helpLine(help string, width int) string {
