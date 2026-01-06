@@ -49,7 +49,7 @@ func (m *AppModel) startEditorForSelected() {
 	}
 	m.editorErr = nil
 	m.editorTitle.SetValue(note.Title)
-	m.editorBody.SetValue(strings.TrimSuffix(note.Content, "\n"))
+	m.editorBody.SetValue(note.Content)
 	m.editorTitle.Focus()
 	m.editorBody.Blur()
 	m.screen = screenEditor
@@ -66,7 +66,7 @@ func (m *AppModel) startEditorForViewer() {
 	m.editorCreated = note.Created
 	m.editorErr = nil
 	m.editorTitle.SetValue(note.Title)
-	m.editorBody.SetValue(strings.TrimSuffix(note.Content, "\n"))
+	m.editorBody.SetValue(note.Content)
 	m.editorTitle.Focus()
 	m.editorBody.Blur()
 	m.screen = screenEditor
@@ -75,36 +75,32 @@ func (m *AppModel) startEditorForViewer() {
 
 func (m *AppModel) updateEditorSize() *AppModel {
 	layout := m.layout()
-	paneWidth := layout.EditorPaneWidth()
-	width := layout.PaneContentWidth(paneWidth)
+	width := layout.PaneContentWidth(layout.EditorPaneWidth())
 	if width < 0 {
 		width = 0
 	}
 
 	m.editorTitle.Width = width
-	bodyWidth := width - 4
-	if bodyWidth < 0 {
-		bodyWidth = 0
+	m.editorBody.SetWidth(width - 4)
+
+	_, bodyPaneHeight := m.editorPaneHeights(layout)
+	contentHeight := layout.PaneContentHeight(bodyPaneHeight)
+	if contentHeight < 3 {
+		contentHeight = 3
 	}
-	m.editorBody.SetWidth(bodyWidth)
-	_, _, bodyContentHeight := m.editorLayout(layout, m.editorTitle.View(), paneWidth)
-	m.editorBody.SetHeight(bodyContentHeight)
+	m.editorBody.SetHeight(contentHeight)
 	return m
 }
 
-func (m AppModel) editorLayout(layout layout.Layout, titleView string, paneWidth int) (int, int, int) {
-	titlePane := layout.TitledPaneWithWidthAndHeight("Title", titleView, paneWidth, 0)
+func (m AppModel) editorPaneHeights(layout layout.Layout) (int, int) {
+	titlePane := layout.TitledPaneWithWidthAndHeight("Title", m.editorTitle.View(), layout.EditorPaneWidth(), 0)
 	titleHeight := lipgloss.Height(titlePane)
 	totalHeight := layout.BodyHeight()
 	bodyPaneHeight := totalHeight - titleHeight
 	if bodyPaneHeight < 3 {
 		bodyPaneHeight = 3
 	}
-	bodyContentHeight := layout.PaneContentHeight(bodyPaneHeight)
-	if bodyContentHeight < 3 {
-		bodyContentHeight = 3
-	}
-	return titleHeight, bodyPaneHeight, bodyContentHeight
+	return titleHeight, bodyPaneHeight
 }
 
 func (m AppModel) saveEditorNote() (AppModel, tea.Cmd) {
