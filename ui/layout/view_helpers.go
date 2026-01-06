@@ -1,70 +1,89 @@
-package ui
+package layout
 
 import (
 	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/never00rei/a7/ui/theme"
 )
 
-func (m AppModel) contentWidth() int {
-	frameWidth := m.frameWidth()
-	paddingX := m.contentPaddingX()
+type Layout struct {
+	Width       int
+	Height      int
+	ContentPadX int
+	ContentPadY int
+	ActiveTheme theme.Theme
+}
+
+func New(width, height int) Layout {
+	return Layout{
+		Width:       width,
+		Height:      height,
+		ContentPadX: 0,
+		ContentPadY: 0,
+		ActiveTheme: theme.CurrentTheme(),
+	}
+}
+
+func (l Layout) ContentWidth() int {
+	frameWidth := l.FrameWidth()
+	paddingX := l.ContentPaddingX()
 	if frameWidth > paddingX*2 {
 		return frameWidth - paddingX*2
 	}
 	return 80
 }
 
-func (m AppModel) frameWidth() int {
-	if m.width > 2 {
-		return m.width - 2
+func (l Layout) FrameWidth() int {
+	if l.Width > 2 {
+		return l.Width - 2
 	}
 	return 80
 }
 
-func (m AppModel) frameHeight() int {
-	if m.height > 2 {
-		return m.height - 2
+func (l Layout) FrameHeight() int {
+	if l.Height > 2 {
+		return l.Height - 2
 	}
 	return 24
 }
 
-func (m AppModel) contentPaddingX() int {
-	return 0
+func (l Layout) ContentPaddingX() int {
+	return l.ContentPadX
 }
 
-func (m AppModel) contentPaddingY() int {
-	return 0
+func (l Layout) ContentPaddingY() int {
+	return l.ContentPadY
 }
 
-func (m AppModel) twoPane(left, right string) string {
-	return m.twoPaneWithRatio(left, right, 0.5)
+func (l Layout) TwoPane(left, right string) string {
+	return l.TwoPaneWithRatio(left, right, 0.5)
 }
 
-func (m AppModel) twoPaneWithRatio(left, right string, leftRatio float64) string {
-	return m.twoPaneWithRatioAndTitles("", "", left, right, leftRatio)
+func (l Layout) TwoPaneWithRatio(left, right string, leftRatio float64) string {
+	return l.TwoPaneWithRatioAndTitles("", "", left, right, leftRatio)
 }
 
-func (m AppModel) twoPaneWithRatioAndTitles(leftTitle, rightTitle, left, right string, leftRatio float64) string {
-	return m.twoPaneWithRatioAndTitlesAndWidth(leftTitle, rightTitle, left, right, leftRatio, m.contentWidth())
+func (l Layout) TwoPaneWithRatioAndTitles(leftTitle, rightTitle, left, right string, leftRatio float64) string {
+	return l.TwoPaneWithRatioAndTitlesAndWidth(leftTitle, rightTitle, left, right, leftRatio, l.ContentWidth())
 }
 
-func (m AppModel) twoPaneWithRatioAndTitlesAndWidth(leftTitle, rightTitle, left, right string, leftRatio float64, totalWidth int) string {
-	theme := currentTheme()
+func (l Layout) TwoPaneWithRatioAndTitlesAndWidth(leftTitle, rightTitle, left, right string, leftRatio float64, totalWidth int) string {
+	theme := l.ActiveTheme
 	total := totalWidth
 	if total <= 0 {
-		total = m.contentWidth()
+		total = l.ContentWidth()
 	}
 	gapWidth := 2
 	paddingX := 2
-	borderX := m.cardBorderX()
+	borderX := l.CardBorderX()
 	extra := paddingX + borderX
 	available := total - gapWidth - (extra * 2)
 	if available < 0 {
 		available = 0
 	}
-	availableHeight := m.bodyHeight()
+	availableHeight := l.BodyHeight()
 	if leftRatio < 0 {
 		leftRatio = 0
 	}
@@ -87,7 +106,7 @@ func (m AppModel) twoPaneWithRatioAndTitlesAndWidth(leftTitle, rightTitle, left,
 		BorderForeground(theme.PaneBorder).
 		Foreground(theme.Text)
 	if availableHeight > 0 {
-		boxHeight := m.paneBoxHeight(availableHeight)
+		boxHeight := l.PaneBoxHeight(availableHeight)
 		leftStyle = leftStyle.Height(boxHeight)
 		rightStyle = rightStyle.Height(boxHeight)
 	}
@@ -95,28 +114,28 @@ func (m AppModel) twoPaneWithRatioAndTitlesAndWidth(leftTitle, rightTitle, left,
 	leftPane := leftStyle.Render(left)
 	rightPane := rightStyle.Render(right)
 	if leftTitle != "" {
-		leftPane = m.injectBorderTitle(leftPane, leftTitle, lipgloss.RoundedBorder(), theme.PaneBorder)
+		leftPane = l.injectBorderTitle(leftPane, leftTitle, lipgloss.RoundedBorder(), theme.PaneBorder)
 	}
 	if rightTitle != "" {
-		rightPane = m.injectBorderTitle(rightPane, rightTitle, lipgloss.RoundedBorder(), theme.PaneBorder)
+		rightPane = l.injectBorderTitle(rightPane, rightTitle, lipgloss.RoundedBorder(), theme.PaneBorder)
 	}
 	gap := lipgloss.NewStyle().Width(gapWidth).Render("")
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, leftPane, gap, rightPane)
 }
 
-func (m AppModel) singlePane(content string) string {
-	return m.singlePaneWithWidth(content, m.contentWidth())
+func (l Layout) SinglePane(content string) string {
+	return l.SinglePaneWithWidth(content, l.ContentWidth())
 }
 
-func (m AppModel) singlePaneWithWidth(content string, totalWidth int) string {
-	theme := currentTheme()
+func (l Layout) SinglePaneWithWidth(content string, totalWidth int) string {
+	theme := l.ActiveTheme
 	paddingX := 2
 	if totalWidth <= 0 {
-		totalWidth = m.contentWidth()
+		totalWidth = l.ContentWidth()
 	}
-	width := m.paneContentWidth(totalWidth)
-	height := m.paneBoxHeight(m.bodyHeight())
+	width := l.PaneContentWidth(totalWidth)
+	height := l.PaneBoxHeight(l.BodyHeight())
 	style := lipgloss.NewStyle().
 		Width(width).
 		Padding(1, paddingX).
@@ -129,19 +148,19 @@ func (m AppModel) singlePaneWithWidth(content string, totalWidth int) string {
 	return style.Render(content)
 }
 
-func (m AppModel) cardBorderX() int {
+func (l Layout) CardBorderX() int {
 	return lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).GetHorizontalBorderSize()
 }
 
-func (m AppModel) cardBorderY() int {
+func (l Layout) CardBorderY() int {
 	return lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).GetVerticalBorderSize()
 }
 
-func (m AppModel) centerContent(content string) string {
-	return lipgloss.Place(m.contentWidth(), lipgloss.Height(content), lipgloss.Center, lipgloss.Top, content)
+func (l Layout) CenterContent(content string) string {
+	return lipgloss.Place(l.ContentWidth(), lipgloss.Height(content), lipgloss.Center, lipgloss.Top, content)
 }
 
-func (m AppModel) paneHeader(title string, paneWidth int) string {
+func (l Layout) PaneHeader(title string, paneWidth int) string {
 	paddingX := 2
 	headerWidth := paneWidth - paddingX*2
 	if headerWidth < 0 {
@@ -155,9 +174,9 @@ func (m AppModel) paneHeader(title string, paneWidth int) string {
 		Render(title)
 }
 
-func (m AppModel) paneContentWidth(totalWidth int) int {
+func (l Layout) PaneContentWidth(totalWidth int) int {
 	paddingX := 2
-	borderX := m.cardBorderX()
+	borderX := l.CardBorderX()
 	width := totalWidth - (paddingX*2 + borderX)
 	if width < 0 {
 		return 0
@@ -165,8 +184,8 @@ func (m AppModel) paneContentWidth(totalWidth int) int {
 	return width
 }
 
-func (m AppModel) paneBoxHeight(totalHeight int) int {
-	borderY := m.cardBorderY()
+func (l Layout) PaneBoxHeight(totalHeight int) int {
+	borderY := l.CardBorderY()
 	height := totalHeight - borderY
 	if height < 0 {
 		return 0
@@ -174,9 +193,9 @@ func (m AppModel) paneBoxHeight(totalHeight int) int {
 	return height
 }
 
-func (m AppModel) paneContentHeight(totalHeight int) int {
+func (l Layout) PaneContentHeight(totalHeight int) int {
 	paddingY := 1
-	borderY := m.cardBorderY()
+	borderY := l.CardBorderY()
 	height := totalHeight - (paddingY*2 + borderY)
 	if height < 0 {
 		return 0
@@ -184,8 +203,8 @@ func (m AppModel) paneContentHeight(totalHeight int) int {
 	return height
 }
 
-func (m AppModel) bodyHeight() int {
-	height := m.frameHeight()
+func (l Layout) BodyHeight() int {
+	height := l.FrameHeight()
 	if height <= 0 {
 		return 0
 	}
@@ -195,18 +214,18 @@ func (m AppModel) bodyHeight() int {
 	return height - 1
 }
 
-func (m AppModel) splitPaneContentWidths(leftRatio float64) (int, int) {
-	return m.splitPaneContentWidthsForTotal(m.contentWidth(), leftRatio)
+func (l Layout) SplitPaneContentWidths(leftRatio float64) (int, int) {
+	return l.SplitPaneContentWidthsForTotal(l.ContentWidth(), leftRatio)
 }
 
-func (m AppModel) splitPaneContentWidthsForTotal(totalWidth int, leftRatio float64) (int, int) {
+func (l Layout) SplitPaneContentWidthsForTotal(totalWidth int, leftRatio float64) (int, int) {
 	total := totalWidth
 	if total <= 0 {
-		total = m.contentWidth()
+		total = l.ContentWidth()
 	}
 	gapWidth := 2
 	paddingX := 2
-	borderX := m.cardBorderX()
+	borderX := l.CardBorderX()
 	extra := (paddingX * 2) + borderX
 	available := total - gapWidth - (extra * 2)
 	if available < 0 {
@@ -223,10 +242,10 @@ func (m AppModel) splitPaneContentWidthsForTotal(totalWidth int, leftRatio float
 	return leftWidth, rightWidth
 }
 
-func (m AppModel) helpLine(help string, width int) string {
-	theme := currentTheme()
+func (l Layout) helpLine(help string, width int) string {
+	theme := l.ActiveTheme
 	if help != "" {
-		help = help + "  |  size: " + strconv.Itoa(m.width) + "x" + strconv.Itoa(m.height)
+		help = help + "  |  size: " + strconv.Itoa(l.Width) + "x" + strconv.Itoa(l.Height)
 	}
 	helpStyle := lipgloss.NewStyle().Width(width).Padding(0, 2).Foreground(theme.Help)
 	return helpStyle.Render(strings.TrimSpace(help))
@@ -253,12 +272,12 @@ func fitToHeight(s string, height int) string {
 	return padToHeight(s, height)
 }
 
-func (m AppModel) frame(content, help string) string {
-	theme := currentTheme()
-	frameWidth := m.frameWidth()
-	frameHeight := m.frameHeight()
-	paddingX := m.contentPaddingX()
-	paddingY := m.contentPaddingY()
+func (l Layout) Frame(content, help string) string {
+	theme := l.ActiveTheme
+	frameWidth := l.FrameWidth()
+	frameHeight := l.FrameHeight()
+	paddingX := l.ContentPaddingX()
+	paddingY := l.ContentPaddingY()
 	innerWidth := frameWidth - paddingX*2
 	innerHeight := frameHeight - paddingY*2
 
@@ -286,7 +305,7 @@ func (m AppModel) frame(content, help string) string {
 
 	placed := body
 	if help != "" && innerHeight > 0 {
-		helpLine := m.helpLine(help, innerWidth)
+		helpLine := l.helpLine(help, innerWidth)
 		if bodyHeight > 0 {
 			placed = body + "\n" + helpLine
 		} else {
@@ -305,10 +324,10 @@ func (m AppModel) frame(content, help string) string {
 		BorderForeground(theme.FrameBorder)
 
 	rendered := frameStyle.Render(placed)
-	return m.injectFrameTitle(rendered, "A7", theme.FrameBorder)
+	return l.injectFrameTitle(rendered, "A7", theme.FrameBorder)
 }
 
-func (m AppModel) injectFrameTitle(frame, title string, color lipgloss.Color) string {
+func (l Layout) injectFrameTitle(frame, title string, color lipgloss.Color) string {
 	lines := strings.Split(frame, "\n")
 	if len(lines) == 0 {
 		return frame
@@ -341,7 +360,7 @@ func (m AppModel) injectFrameTitle(frame, title string, color lipgloss.Color) st
 	return strings.Join(lines, "\n")
 }
 
-func (m AppModel) injectBorderTitle(frame, title string, border lipgloss.Border, color lipgloss.Color) string {
+func (l Layout) injectBorderTitle(frame, title string, border lipgloss.Border, color lipgloss.Color) string {
 	lines := strings.Split(frame, "\n")
 	if len(lines) == 0 {
 		return frame
@@ -373,21 +392,21 @@ func (m AppModel) injectBorderTitle(frame, title string, border lipgloss.Border,
 	return strings.Join(lines, "\n")
 }
 
-func (m AppModel) titledPane(title, content string) string {
-	return m.titledPaneWithWidth(title, content, m.contentWidth())
+func (l Layout) TitledPane(title, content string) string {
+	return l.TitledPaneWithWidth(title, content, l.ContentWidth())
 }
 
-func (m AppModel) titledPaneWithWidth(title, content string, totalWidth int) string {
-	theme := currentTheme()
-	pane := m.singlePaneWithWidth(content, totalWidth)
-	return m.injectBorderTitle(pane, title, lipgloss.RoundedBorder(), theme.PaneBorder)
+func (l Layout) TitledPaneWithWidth(title, content string, totalWidth int) string {
+	theme := l.ActiveTheme
+	pane := l.SinglePaneWithWidth(content, totalWidth)
+	return l.injectBorderTitle(pane, title, lipgloss.RoundedBorder(), theme.PaneBorder)
 }
 
-func (m AppModel) titledPaneWithWidthAndHeight(title, content string, totalWidth, totalHeight int) string {
-	theme := currentTheme()
+func (l Layout) TitledPaneWithWidthAndHeight(title, content string, totalWidth, totalHeight int) string {
+	theme := l.ActiveTheme
 	paddingX := 2
-	width := m.paneContentWidth(totalWidth)
-	height := m.paneContentHeight(totalHeight)
+	width := l.PaneContentWidth(totalWidth)
+	height := l.PaneContentHeight(totalHeight)
 	if width < 0 {
 		width = 0
 	}
@@ -401,24 +420,24 @@ func (m AppModel) titledPaneWithWidthAndHeight(title, content string, totalWidth
 		style = style.Height(height)
 	}
 	pane := style.Render(content)
-	return m.injectBorderTitle(pane, title, lipgloss.RoundedBorder(), theme.PaneBorder)
+	return l.injectBorderTitle(pane, title, lipgloss.RoundedBorder(), theme.PaneBorder)
 }
 
-func (m AppModel) primaryPaneWidth() int {
-	width := m.contentWidth() / 2
+func (l Layout) PrimaryPaneWidth() int {
+	width := l.ContentWidth() / 2
 	if width <= 0 {
-		return m.contentWidth()
+		return l.ContentWidth()
 	}
 	return width
 }
 
-func (m AppModel) formWidth() int {
-	return m.paneContentWidth(m.primaryPaneWidth())
+func (l Layout) FormWidth() int {
+	return l.PaneContentWidth(l.PrimaryPaneWidth())
 }
 
-func (m AppModel) editorPaneWidth() int {
-	minWidth := m.primaryPaneWidth()
-	target := m.contentWidth()
+func (l Layout) EditorPaneWidth() int {
+	minWidth := l.PrimaryPaneWidth()
+	target := l.ContentWidth()
 	if target < minWidth {
 		return minWidth
 	}

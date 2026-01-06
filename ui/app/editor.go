@@ -1,4 +1,4 @@
-package ui
+package app
 
 import (
 	"fmt"
@@ -8,6 +8,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/never00rei/a7/journal"
+	"github.com/never00rei/a7/ui/components"
+	"github.com/never00rei/a7/ui/layout"
 )
 
 func (m *AppModel) startEditorForNew() {
@@ -27,21 +29,21 @@ func (m *AppModel) startEditorForSelected() {
 		return
 	}
 	item := m.notesList.SelectedItem()
-	noteItem, ok := item.(noteItem)
+	noteItem, ok := item.(components.NoteItem)
 	if !ok {
 		return
 	}
 	service := journal.NewService(m.storagePath, journal.WithEncryption(m.encrypt, m.sshKeyPath))
-	note, err := service.LoadNote(noteItem.info.Filename)
+	note, err := service.LoadNote(noteItem.Info.Filename)
 	if err != nil {
 		m.editorErr = err
 		return
 	}
 
-	m.editorFile = noteItem.info.Filename
+	m.editorFile = noteItem.Info.Filename
 	m.editorCreated = note.Created
 	if m.editorCreated.IsZero() {
-		if created, ok := parseFilenameTimestamp(noteItem.info.Filename); ok {
+		if created, ok := components.ParseFilenameTimestamp(noteItem.Info.Filename); ok {
 			m.editorCreated = created
 		}
 	}
@@ -72,7 +74,8 @@ func (m *AppModel) startEditorForViewer() {
 }
 
 func (m *AppModel) updateEditorSize() *AppModel {
-	width := m.paneContentWidth(m.editorPaneWidth())
+	layout := m.layout()
+	width := layout.PaneContentWidth(layout.EditorPaneWidth())
 	if width < 0 {
 		width = 0
 	}
@@ -80,8 +83,8 @@ func (m *AppModel) updateEditorSize() *AppModel {
 	m.editorTitle.Width = width
 	m.editorBody.SetWidth(width - 4)
 
-	_, bodyPaneHeight := m.editorPaneHeights()
-	contentHeight := m.paneContentHeight(bodyPaneHeight)
+	_, bodyPaneHeight := m.editorPaneHeights(layout)
+	contentHeight := layout.PaneContentHeight(bodyPaneHeight)
 	if contentHeight < 3 {
 		contentHeight = 3
 	}
@@ -89,10 +92,10 @@ func (m *AppModel) updateEditorSize() *AppModel {
 	return m
 }
 
-func (m AppModel) editorPaneHeights() (int, int) {
-	titlePane := m.titledPaneWithWidthAndHeight("Title", m.editorTitle.View(), m.editorPaneWidth(), 0)
+func (m AppModel) editorPaneHeights(layout layout.Layout) (int, int) {
+	titlePane := layout.TitledPaneWithWidthAndHeight("Title", m.editorTitle.View(), layout.EditorPaneWidth(), 0)
 	titleHeight := lipgloss.Height(titlePane)
-	totalHeight := m.bodyHeight()
+	totalHeight := layout.BodyHeight()
 	bodyPaneHeight := totalHeight - titleHeight
 	if bodyPaneHeight < 3 {
 		bodyPaneHeight = 3

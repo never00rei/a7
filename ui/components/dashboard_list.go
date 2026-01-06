@@ -1,4 +1,4 @@
-package ui
+package components
 
 import (
 	"fmt"
@@ -10,27 +10,27 @@ import (
 	"github.com/never00rei/a7/journal"
 )
 
-const dashboardLeftRatio = 0.6
+const DashboardLeftRatio = 0.6
 
 var metadataLabelStyle = lipgloss.NewStyle().Bold(true)
 
-type noteItem struct {
-	info journal.NoteInfo
+type NoteItem struct {
+	Info journal.NoteInfo
 }
 
-func (n noteItem) Title() string {
-	return n.info.Filename
+func (n NoteItem) Title() string {
+	return n.Info.Filename
 }
 
-func (n noteItem) Description() string {
-	return n.info.ModTime.Format(time.RFC822)
+func (n NoteItem) Description() string {
+	return n.Info.ModTime.Format(time.RFC822)
 }
 
-func (n noteItem) FilterValue() string {
-	return n.info.Filename
+func (n NoteItem) FilterValue() string {
+	return n.Info.Filename
 }
 
-func newNotesList(items []list.Item, width, height int) list.Model {
+func NewNotesList(items []list.Item, width, height int) list.Model {
 	l := list.New(items, list.NewDefaultDelegate(), width, height)
 	l.SetShowHelp(false)
 	l.SetShowPagination(false)
@@ -40,24 +40,15 @@ func newNotesList(items []list.Item, width, height int) list.Model {
 	return l
 }
 
-func buildNoteItems(notes []journal.NoteInfo) []list.Item {
+func BuildNoteItems(notes []journal.NoteInfo) []list.Item {
 	items := make([]list.Item, 0, len(notes))
 	for _, note := range notes {
-		items = append(items, noteItem{info: note})
+		items = append(items, NoteItem{Info: note})
 	}
 	return items
 }
 
-func (m AppModel) dashboardListSize() (int, int) {
-	leftWidth, _ := m.splitPaneContentWidths(dashboardLeftRatio)
-	height := m.paneContentHeight(m.bodyHeight())
-	if height < 0 {
-		height = 0
-	}
-	return leftWidth, height
-}
-
-func parseFilenameTimestamp(filename string) (time.Time, bool) {
+func ParseFilenameTimestamp(filename string) (time.Time, bool) {
 	if len(filename) < len("2006-01-02_15-04") {
 		return time.Time{}, false
 	}
@@ -69,25 +60,25 @@ func parseFilenameTimestamp(filename string) (time.Time, bool) {
 	return parsed, true
 }
 
-func formatSelectedMeta(item list.Item, total int, note *journal.Note, loadErr error) string {
+func FormatSelectedMeta(item list.Item, total int, note *journal.Note, loadErr error) string {
 	if item == nil {
 		return fmt.Sprintf("%s: %d\n\nSelect a journal to see details.", boldLabel("Total journals"), total)
 	}
 
-	noteItem, ok := item.(noteItem)
+	noteItem, ok := item.(NoteItem)
 	if !ok {
 		return fmt.Sprintf("%s: %d", boldLabel("Total journals"), total)
 	}
 
 	lines := []string{
 		boldLabel("Selected journal"),
-		noteItem.info.Filename,
+		noteItem.Info.Filename,
 		"",
 		boldLabel("Last modified"),
-		noteItem.info.ModTime.Format(time.RFC822),
+		noteItem.Info.ModTime.Format(time.RFC822),
 	}
 
-	if created, ok := parseFilenameTimestamp(noteItem.info.Filename); ok {
+	if created, ok := ParseFilenameTimestamp(noteItem.Info.Filename); ok {
 		lines = append(lines, "", boldLabel("Created"), created.Format(time.RFC822))
 	}
 

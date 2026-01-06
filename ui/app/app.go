@@ -1,4 +1,4 @@
-package ui
+package app
 
 import (
 	"time"
@@ -11,6 +11,9 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/never00rei/a7/config"
 	"github.com/never00rei/a7/journal"
+	"github.com/never00rei/a7/ui/components"
+	"github.com/never00rei/a7/ui/layout"
+	"github.com/never00rei/a7/ui/screens"
 )
 
 type screenID int
@@ -65,9 +68,9 @@ func NewAppModel() AppModel {
 		model.encrypt = conf.Encrypt
 		model.screen = screenDashboard
 	}
-	model.storageForm = newStorageForm(&model.storagePath, 0)
-	model.privacyForm = newPrivacyForm(&model.encrypt, &model.sshKeyPath, &model.sshPubKeyPath, 0)
-	model.notesList = newNotesList(nil, 0, 0)
+	model.storageForm = components.NewStorageForm(&model.storagePath, 0)
+	model.privacyForm = components.NewPrivacyForm(&model.encrypt, &model.sshKeyPath, &model.sshPubKeyPath, 0)
+	model.notesList = components.NewNotesList(nil, 0, 0)
 	model.viewer = viewport.New(0, 0)
 	model.editorTitle = textinput.New()
 	model.editorTitle.Placeholder = "Journal title"
@@ -260,7 +263,7 @@ func (m AppModel) updateActiveForm(msg tea.Msg) (AppModel, tea.Cmd, bool) {
 		model, cmd := m.storageForm.Update(msg)
 		m.storageForm = model.(*huh.Form)
 		if m.storageForm.State == huh.StateCompleted {
-			m.storagePath = m.storageForm.GetString(storagePathKey)
+			m.storagePath = m.storageForm.GetString(components.StoragePathKey)
 			m.screen = nextScreen(m.screen)
 		}
 		if m.storageForm.State == huh.StateAborted {
@@ -274,9 +277,9 @@ func (m AppModel) updateActiveForm(msg tea.Msg) (AppModel, tea.Cmd, bool) {
 		model, cmd := m.privacyForm.Update(msg)
 		m.privacyForm = model.(*huh.Form)
 		if m.privacyForm.State == huh.StateCompleted {
-			m.encrypt = m.privacyForm.GetBool(encryptKey)
-			m.sshKeyPath = m.privacyForm.GetString(sshKeyPathKey)
-			m.sshPubKeyPath = m.privacyForm.GetString(sshPubKeyPathKey)
+			m.encrypt = m.privacyForm.GetBool(components.EncryptKey)
+			m.sshKeyPath = m.privacyForm.GetString(components.SshKeyPathKey)
+			m.sshPubKeyPath = m.privacyForm.GetString(components.SshPubKeyPathKey)
 			if !m.encrypt {
 				m.sshKeyPath = ""
 				m.sshPubKeyPath = ""
@@ -293,7 +296,8 @@ func (m AppModel) updateActiveForm(msg tea.Msg) (AppModel, tea.Cmd, bool) {
 }
 
 func (m AppModel) updateFormWidths() AppModel {
-	width := m.formWidth()
+	layout := m.layout()
+	width := layout.FormWidth()
 	if m.storageForm != nil {
 		m.storageForm.WithWidth(width)
 	}
@@ -304,9 +308,19 @@ func (m AppModel) updateFormWidths() AppModel {
 }
 
 func (m AppModel) updateDashboardListSize() AppModel {
-	width, height := m.dashboardListSize()
+	layout := m.layout()
+	leftWidth, _ := layout.SplitPaneContentWidths(components.DashboardLeftRatio)
+	height := layout.PaneContentHeight(layout.BodyHeight())
+	if height < 0 {
+		height = 0
+	}
+	width := leftWidth
 	m.notesList.SetSize(width, height)
 	return m
+}
+
+func (m AppModel) layout() layout.Layout {
+	return layout.New(m.width, m.height)
 }
 
 func (m AppModel) initActiveFormCmd() tea.Cmd {
@@ -358,7 +372,7 @@ func (m AppModel) loadDashboardNotes() AppModel {
 	}
 
 	m.notes = notes
-	m.notesList.SetItems(buildNoteItems(notes))
+	m.notesList.SetItems(components.BuildNoteItems(notes))
 	if len(notes) > 0 {
 		m.notesList.Select(0)
 	}
@@ -376,7 +390,7 @@ func (m AppModel) updateDashboardSelection() AppModel {
 	}
 
 	item := m.notesList.SelectedItem()
-	noteItem, ok := item.(noteItem)
+	noteItem, ok := item.(components.NoteItem)
 	if !ok {
 		m.dashboardNote = nil
 		m.dashboardNoteErr = nil
@@ -384,36 +398,37 @@ func (m AppModel) updateDashboardSelection() AppModel {
 		return m
 	}
 
-	if noteItem.info.Filename == m.dashboardNoteFilename && m.dashboardNoteErr == nil && m.dashboardNote != nil {
+	if noteItem.Info.Filename == m.dashboardNoteFilename && m.dashboardNoteErr == nil && m.dashboardNote != nil {
 		return m
 	}
 
 	service := journal.NewService(m.storagePath, journal.WithEncryption(m.encrypt, m.sshKeyPath))
-	note, err := service.LoadNote(noteItem.info.Filename)
-	m.dashboardNoteFilename = noteItem.info.Filename
+	note, err := service.LoadNote(noteItem.Info.Filename)
+	m.dashboardNoteFilename = noteItem.Info.Filename
 	m.dashboardNote = note
 	m.dashboardNoteErr = err
 	return m
 }
 
 func (m AppModel) View() string {
+	layout := m.layout()
 	switch m.screen {
 	case screenWelcome:
-		return m.frame(m.viewWelcome(), m.helpText())
+		return layout.Frame(screens.Welcome(layout), m.helpText())
 	case screenWalkthroughStorage:
-		return m.frame(m.viewWalkthroughStorage(), m.helpText())
+		return layout.Frame(screens.WalkthroughStorage(layout, m.storageForm), m.helpText())
 	case screenWalkthroughPrivacy:
-		return m.frame(m.viewWalkthroughPrivacy(), m.helpText())
+		return layout.Frame(screens.WalkthroughPrivacy(layout, m.privacyForm), m.helpText())
 	case screenSetup:
-		return m.frame(m.viewSetup(), m.helpText())
+		return layout.Frame(screens.Setup(layout, m.storagePath, m.sshKeyPath, m.encrypt), m.helpText())
 	case screenDashboard:
-		return m.frame(m.viewDashboard(), m.helpText())
+		return layout.Frame(screens.Dashboard(layout, m.storagePath, m.dashboardErr, m.notes, m.notesList, m.dashboardNote, m.dashboardNoteErr), m.helpText())
 	case screenViewer:
-		return m.frame(m.viewViewer(), m.helpText())
+		return layout.Frame(screens.Viewer(layout, m.viewerTitle, m.viewer.View()), m.helpText())
 	case screenEditor:
-		return m.frame(m.viewEditor(), m.helpText())
+		return layout.Frame(screens.Editor(layout, m.editorTitle.View(), m.editorBody.View(), m.editorErr), m.helpText())
 	default:
-		return m.frame("unknown screen", m.helpText())
+		return layout.Frame("unknown screen", m.helpText())
 	}
 }
 
