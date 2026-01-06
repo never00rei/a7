@@ -158,10 +158,10 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch msg.String() {
 			case "enter":
 				return m.openViewer()
-			case "n":
+			case "ctrl+n":
 				m.startEditorForNew()
 				return m, nil
-			case "e":
+			case "ctrl+e":
 				m.startEditorForSelected()
 				return m, nil
 			}
@@ -183,7 +183,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.screen = nextScreen(m.screen)
 			return m, m.initActiveFormCmd()
-		case "e":
+		case "ctrl+e":
 			if m.screen == screenViewer {
 				m.startEditorForViewer()
 				return m, nil
@@ -373,6 +373,7 @@ func (m AppModel) loadDashboardNotes() AppModel {
 
 	m.notes = notes
 	m.notesList.SetItems(components.BuildNoteItems(notes))
+	m.notesList.Title = m.storagePath
 	if len(notes) > 0 {
 		m.notesList.Select(0)
 	}
