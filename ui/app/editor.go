@@ -134,7 +134,7 @@ func (m AppModel) saveEditorNote() (AppModel, tea.Cmd) {
 	}
 
 	m.editorErr = nil
-	m = m.loadDashboardNotes()
 	m.screen = screenDashboard
-	return m, nil
+	m = m.resetDashboardNotes()
+	return m, m.loadDashboardNotesCmd()
 }
