@@ -158,10 +158,10 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch msg.String() {
 			case "enter":
 				return m.openViewer()
-			case "n":
+			case "ctrl+n":
 				m.startEditorForNew()
 				return m, nil
-			case "e":
+			case "ctrl+e":
 				m.startEditorForSelected()
 				return m, nil
 			}
@@ -183,7 +183,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.screen = nextScreen(m.screen)
 			return m, m.initActiveFormCmd()
-		case "e":
+		case "ctrl+e":
 			if m.screen == screenViewer {
 				m.startEditorForViewer()
 				return m, nil
@@ -373,6 +373,7 @@ func (m AppModel) loadDashboardNotes() AppModel {
 
 	m.notes = notes
 	m.notesList.SetItems(components.BuildNoteItems(notes))
+	m.notesList.Title = m.storagePath
 	if len(notes) > 0 {
 		m.notesList.Select(0)
 	}
@@ -435,19 +436,19 @@ func (m AppModel) View() string {
 func (m AppModel) helpText() string {
 	switch m.screen {
 	case screenWelcome:
-		return "enter: begin  ctrl+c: quit"
+		return "enter begin • ctrl+c quit"
 	case screenWalkthroughStorage:
-		return "enter/tab: next  shift+tab: back  ctrl+c: quit"
+		return "⏎/enter/tab next • shift+tab back • ctrl+c quit"
 	case screenWalkthroughPrivacy:
-		return "enter/tab: next  shift+tab: back  s: skip  ctrl+c: quit"
+		return "⏎/enter/tab next • shift+tab back • s skip • ctrl+c quit"
 	case screenDashboard:
-		return "up/down: select  enter: view  n: new  e: edit  ctrl+c: quit"
+		return "↑/k up • ↓/j down • / filter • ⏎/enter view • ctrl+n new • ctrl+e edit • ctrl+c quit"
 	case screenViewer:
-		return "esc: back  e: edit  ctrl+c: quit"
+		return "esc back • ctrl+e edit • ctrl+c quit"
 	case screenEditor:
-		return "tab: switch  ctrl+s: save  esc: back  ctrl+c: quit"
+		return "tab switch • ctrl+s save • esc back • ctrl+c quit"
 	default:
-		return "enter: continue  shift+tab: back  ctrl+c: quit"
+		return "⏎/enter continue • shift+tab back • ctrl+c quit"
 	}
 }
 

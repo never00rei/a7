@@ -33,9 +33,10 @@ func (n NoteItem) FilterValue() string {
 func NewNotesList(items []list.Item, width, height int) list.Model {
 	l := list.New(items, list.NewDefaultDelegate(), width, height)
 	l.SetShowHelp(false)
-	l.SetShowPagination(false)
-	l.SetShowStatusBar(false)
-	l.SetFilteringEnabled(false)
+	l.SetShowPagination(true)
+	l.SetShowStatusBar(true)
+	l.SetFilteringEnabled(true)
+	l.DisableQuitKeybindings()
 	l.Title = ""
 	return l
 }

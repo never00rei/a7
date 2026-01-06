@@ -1,10 +1,10 @@
 package layout
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/never00rei/a7/ui/theme"
 )
 
@@ -244,11 +244,13 @@ func (l Layout) SplitPaneContentWidthsForTotal(totalWidth int, leftRatio float64
 
 func (l Layout) helpLine(help string, width int) string {
 	theme := l.ActiveTheme
-	if help != "" {
-		help = help + "  |  size: " + strconv.Itoa(l.Width) + "x" + strconv.Itoa(l.Height)
+	contentWidth := width - 4
+	if contentWidth < 0 {
+		contentWidth = 0
 	}
+	help = ansi.Truncate(strings.TrimSpace(help), contentWidth, "")
 	helpStyle := lipgloss.NewStyle().Width(width).Padding(0, 2).Foreground(theme.Help)
-	return helpStyle.Render(strings.TrimSpace(help))
+	return helpStyle.Render(help)
 }
 
 func padToHeight(s string, height int) string {
