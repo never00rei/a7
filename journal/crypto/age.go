@@ -1,4 +1,4 @@
-package journal
+package crypto
 
 import (
 	"bytes"
@@ -16,18 +16,18 @@ import (
 
 var errMissingSSHKey = errors.New("ssh key path is required for encryption")
 
-func maybeEncryptBody(body string, enabled bool, sshKeyPath string) (string, bool, error) {
+func MaybeEncryptBody(body string, enabled bool, sshKeyPath string) (string, bool, error) {
 	if !enabled {
 		return body, false, nil
 	}
-	encrypted, err := encryptBody(body, sshKeyPath)
+	encrypted, err := EncryptBody(body, sshKeyPath)
 	if err != nil {
 		return "", true, err
 	}
 	return encrypted, true, nil
 }
 
-func encryptBody(body, sshKeyPath string) (string, error) {
+func EncryptBody(body, sshKeyPath string) (string, error) {
 	if sshKeyPath == "" {
 		return "", errMissingSSHKey
 	}
@@ -57,7 +57,7 @@ func encryptBody(body, sshKeyPath string) (string, error) {
 	return buf.String(), nil
 }
 
-func decryptBody(body, sshKeyPath string) (string, error) {
+func DecryptBody(body, sshKeyPath string) (string, error) {
 	if sshKeyPath == "" {
 		return "", errMissingSSHKey
 	}
