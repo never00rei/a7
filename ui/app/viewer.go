@@ -1,4 +1,4 @@
-package ui
+package app
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/never00rei/a7/journal"
+	"github.com/never00rei/a7/ui/components"
 )
 
 func (m AppModel) openViewer() (AppModel, tea.Cmd) {
@@ -15,13 +16,13 @@ func (m AppModel) openViewer() (AppModel, tea.Cmd) {
 	}
 
 	item := m.notesList.SelectedItem()
-	noteItem, ok := item.(noteItem)
+	noteItem, ok := item.(components.NoteItem)
 	if !ok {
 		return m, nil
 	}
 
 	service := journal.NewService(m.storagePath, journal.WithEncryption(m.encrypt, m.sshKeyPath))
-	note, err := service.LoadNote(noteItem.info.Filename)
+	note, err := service.LoadNote(noteItem.Info.Filename)
 	if err != nil {
 		m.viewerTitle = "Unable to load journal"
 		m.viewer.SetContent(fmt.Sprintf("Error: %v", err))
@@ -34,7 +35,7 @@ func (m AppModel) openViewer() (AppModel, tea.Cmd) {
 
 	title := note.Title
 	if title == "" {
-		title = noteItem.info.Filename
+		title = noteItem.Info.Filename
 	}
 
 	m.viewerTitle = title
@@ -47,8 +48,9 @@ func (m AppModel) openViewer() (AppModel, tea.Cmd) {
 }
 
 func (m *AppModel) updateViewerSize() *AppModel {
-	width := m.paneContentWidth(m.contentWidth() - 2)
-	height := m.paneContentHeight(m.bodyHeight())
+	layout := m.layout()
+	width := layout.PaneContentWidth(layout.ContentWidth() - 2)
+	height := layout.PaneContentHeight(layout.BodyHeight())
 	if width < 0 {
 		width = 0
 	}

@@ -1,16 +1,16 @@
-package ui
+package theme
 
 import "github.com/charmbracelet/lipgloss"
 
-type theme struct {
+type Theme struct {
 	FrameBorder lipgloss.Color
 	PaneBorder  lipgloss.Color
 	Text        lipgloss.Color
 	Help        lipgloss.Color
 }
 
-func currentTheme() theme {
-	return theme{
+func CurrentTheme() Theme {
+	return Theme{
 		FrameBorder: lipgloss.Color("240"),
 		PaneBorder:  lipgloss.Color("245"),
 		Text:        lipgloss.Color("252"),

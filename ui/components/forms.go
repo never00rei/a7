@@ -1,4 +1,4 @@
-package ui
+package components
 
 import (
 	"path/filepath"
@@ -8,17 +8,17 @@ import (
 )
 
 const (
-	storagePathKey = "journal_path"
-	sshKeyPathKey  = "ssh_key_path"
-	sshPubKeyPathKey = "ssh_pub_key_path"
-	encryptKey     = "encrypt"
+	StoragePathKey   = "journal_path"
+	SshKeyPathKey    = "ssh_key_path"
+	SshPubKeyPathKey = "ssh_pub_key_path"
+	EncryptKey       = "encrypt"
 )
 
-func newStorageForm(path *string, width int) *huh.Form {
+func NewStorageForm(path *string, width int) *huh.Form {
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
-				Key(storagePathKey).
+				Key(StoragePathKey).
 				Value(path).
 				Title("Journal folder").
 				Placeholder(config.Home).
@@ -34,11 +34,11 @@ func newStorageForm(path *string, width int) *huh.Form {
 	return form
 }
 
-func newPrivacyForm(encrypt *bool, sshKeyPath *string, sshPubKeyPath *string, width int) *huh.Form {
+func NewPrivacyForm(encrypt *bool, sshKeyPath *string, sshPubKeyPath *string, width int) *huh.Form {
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewConfirm().
-				Key(encryptKey).
+				Key(EncryptKey).
 				Value(encrypt).
 				Title("Encrypt sensitive journals?").
 				Affirmative("Yes").
@@ -46,7 +46,7 @@ func newPrivacyForm(encrypt *bool, sshKeyPath *string, sshPubKeyPath *string, wi
 		),
 		huh.NewGroup(
 			huh.NewFilePicker().
-				Key(sshKeyPathKey).
+				Key(SshKeyPathKey).
 				Value(sshKeyPath).
 				Title("SSH private key (required)").
 				CurrentDirectory(config.SshPath).
@@ -56,7 +56,7 @@ func newPrivacyForm(encrypt *bool, sshKeyPath *string, sshPubKeyPath *string, wi
 				Height(12).
 				Description("Private key used to decrypt encrypted journals."),
 			huh.NewFilePicker().
-				Key(sshPubKeyPathKey).
+				Key(SshPubKeyPathKey).
 				Value(sshPubKeyPath).
 				Title("SSH public key (required)").
 				CurrentDirectory(config.SshPath).
