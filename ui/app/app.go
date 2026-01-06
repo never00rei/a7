@@ -427,7 +427,9 @@ func (m AppModel) View() string {
 	case screenViewer:
 		return layout.Frame(screens.Viewer(layout, m.viewerTitle, m.viewer.View()), m.helpText())
 	case screenEditor:
-		return layout.Frame(screens.Editor(layout, m.editorTitle.View(), m.editorBody.View(), m.editorErr), m.helpText())
+		paneWidth := layout.EditorPaneWidth()
+		_, bodyPaneHeight, _ := m.editorLayout(layout, m.editorTitle.View(), paneWidth)
+		return layout.Frame(screens.Editor(layout, m.editorTitle.View(), m.editorBody.View(), m.editorErr, paneWidth, bodyPaneHeight), m.helpText())
 	default:
 		return layout.Frame("unknown screen", m.helpText())
 	}
