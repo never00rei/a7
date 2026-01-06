@@ -11,23 +11,23 @@ import (
 )
 
 func (m AppModel) openViewer() (AppModel, tea.Cmd) {
-	if m.storagePath == "" {
+	if m.config.StoragePath == "" {
 		return m, nil
 	}
 
-	item := m.notesList.SelectedItem()
+	item := m.dashboard.List.SelectedItem()
 	noteItem, ok := item.(components.NoteItem)
 	if !ok {
 		return m, nil
 	}
 
-	service := journal.NewService(m.storagePath, journal.WithEncryption(m.encrypt, m.sshKeyPath))
+	service := journal.NewService(m.config.StoragePath, journal.WithEncryption(m.config.Encrypt, m.config.SshKeyPath))
 	note, err := service.LoadNote(noteItem.Info.Filename)
 	if err != nil {
-		m.viewerTitle = "Unable to load journal"
-		m.viewer.SetContent(fmt.Sprintf("Error: %v", err))
-		m.viewer.YOffset = 0
-		m.viewerNote = nil
+		m.viewer.Title = "Unable to load journal"
+		m.viewer.Viewport.SetContent(fmt.Sprintf("Error: %v", err))
+		m.viewer.Viewport.YOffset = 0
+		m.viewer.Note = nil
 		m.screen = screenViewer
 		m.updateViewerSize()
 		return m, nil
@@ -38,10 +38,10 @@ func (m AppModel) openViewer() (AppModel, tea.Cmd) {
 		title = noteItem.Info.Filename
 	}
 
-	m.viewerTitle = title
-	m.viewerRaw = note.Content
-	m.viewer.YOffset = 0
-	m.viewerNote = note
+	m.viewer.Title = title
+	m.viewer.Raw = note.Content
+	m.viewer.Viewport.YOffset = 0
+	m.viewer.Note = note
 	m.screen = screenViewer
 	m.updateViewerSize()
 	return m, nil
@@ -63,23 +63,23 @@ func (m *AppModel) updateViewerSize() *AppModel {
 	if height == 0 {
 		height = 1
 	}
-	m.viewer.Width = width
-	m.viewer.Height = height
+	m.viewer.Viewport.Width = width
+	m.viewer.Viewport.Height = height
 	m.renderViewerContent()
 	return m
 }
 
 func (m *AppModel) renderViewerContent() {
-	if m.viewerRaw == "" {
-		m.viewer.SetContent("This journal is empty.")
+	if m.viewer.Raw == "" {
+		m.viewer.Viewport.SetContent("This journal is empty.")
 		return
 	}
-	rendered, err := renderMarkdown(m.viewer.Width, m.viewerRaw)
+	rendered, err := renderMarkdown(m.viewer.Viewport.Width, m.viewer.Raw)
 	if err != nil || strings.TrimSpace(rendered) == "" {
-		m.viewer.SetContent(m.viewerRaw)
+		m.viewer.Viewport.SetContent(m.viewer.Raw)
 		return
 	}
-	m.viewer.SetContent(rendered)
+	m.viewer.Viewport.SetContent(rendered)
 }
 
 func renderMarkdown(width int, content string) (string, error) {
