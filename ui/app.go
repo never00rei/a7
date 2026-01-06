@@ -169,7 +169,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.screen = screenDashboard
 				return m, nil
 			}
-		case "q", "ctrl+c":
+		case "ctrl+c":
 			return m, tea.Quit
 		case "enter":
 			if m.screen == screenSetup {
