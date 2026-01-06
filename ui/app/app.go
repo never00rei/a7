@@ -77,13 +77,13 @@ func NewAppModel() AppModel {
 	model.editorBody = textarea.New()
 	model.editorBody.Placeholder = "Start writing..."
 	model.editorBody.CharLimit = 0
-	if model.screen == screenDashboard {
-		model = model.loadDashboardNotes()
-	}
 	return model
 }
 
 func (m AppModel) Init() tea.Cmd {
+	if m.screen == screenDashboard {
+		return m.loadDashboardNotesCmd()
+	}
 	return nil
 }
 
@@ -96,13 +96,21 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m = m.updateDashboardListSize()
 		m = *m.updateViewerSize()
 		m = *m.updateEditorSize()
+	case dashboardNotesMsg:
+		return m.applyDashboardNotes(msg), nil
+	case configSavedMsg:
+		return m, nil
+	case errMsg:
+		m.lastError = msg.err
+		return m, nil
 	case error:
 		m.lastError = msg
 		return m, nil
 	case screenID:
 		m.screen = msg
 		if m.screen == screenDashboard {
-			m = m.loadDashboardNotes()
+			m = m.resetDashboardNotes()
+			return m, m.loadDashboardNotesCmd()
 		}
 		if m.screen == screenViewer {
 			m = *m.updateViewerSize()
@@ -240,9 +248,9 @@ func (m AppModel) saveConfigCmd() tea.Cmd {
 		}
 		conf := config.NewConf(journalPath, sshKeyPath, sshPubKeyPath, m.encrypt)
 		if err := conf.SaveConfig(); err != nil {
-			return err
+			return errMsg{err: err}
 		}
-		return nil
+		return configSavedMsg{}
 	}
 }
 
@@ -351,30 +359,45 @@ func (m AppModel) batchFormCmd(cmd tea.Cmd, previous screenID) tea.Cmd {
 	return tea.Batch(cmd, nextCmd)
 }
 
-func (m AppModel) loadDashboardNotes() AppModel {
+func (m AppModel) resetDashboardNotes() AppModel {
 	m.dashboardErr = nil
 	m.notes = nil
 	m.dashboardNote = nil
 	m.dashboardNoteErr = nil
 	m.dashboardNoteFilename = ""
+	m.notesList.SetItems(nil)
+	m.notesList.Title = ""
+	return m
+}
 
-	if m.storagePath == "" {
+func (m AppModel) loadDashboardNotesCmd() tea.Cmd {
+	path := m.storagePath
+	return func() tea.Msg {
+		if path == "" {
+			return dashboardNotesMsg{path: path}
+		}
+		service := journal.NewService(path)
+		notes, err := service.ListNotes()
+		return dashboardNotesMsg{path: path, notes: notes, err: err}
+	}
+}
+
+func (m AppModel) applyDashboardNotes(msg dashboardNotesMsg) AppModel {
+	if msg.path != m.storagePath {
+		return m
+	}
+	m.dashboardErr = msg.err
+	if msg.err != nil {
+		m.notes = nil
 		m.notesList.SetItems(nil)
+		m.notesList.Title = ""
 		return m
 	}
 
-	service := journal.NewService(m.storagePath)
-	notes, err := service.ListNotes()
-	if err != nil {
-		m.dashboardErr = err
-		m.notesList.SetItems(nil)
-		return m
-	}
-
-	m.notes = notes
-	m.notesList.SetItems(components.BuildNoteItems(notes))
+	m.notes = msg.notes
+	m.notesList.SetItems(components.BuildNoteItems(msg.notes))
 	m.notesList.Title = m.storagePath
-	if len(notes) > 0 {
+	if len(msg.notes) > 0 {
 		m.notesList.Select(0)
 	}
 	m = m.updateDashboardListSize()
