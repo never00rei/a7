@@ -436,19 +436,19 @@ func (m AppModel) View() string {
 func (m AppModel) helpText() string {
 	switch m.screen {
 	case screenWelcome:
-		return "enter: begin  ctrl+c: quit"
+		return "enter begin • ctrl+c quit"
 	case screenWalkthroughStorage:
-		return "enter/tab: next  shift+tab: back  ctrl+c: quit"
+		return "⏎/enter/tab next • shift+tab back • ctrl+c quit"
 	case screenWalkthroughPrivacy:
-		return "enter/tab: next  shift+tab: back  s: skip  ctrl+c: quit"
+		return "⏎/enter/tab next • shift+tab back • s skip • ctrl+c quit"
 	case screenDashboard:
-		return "up/down: select  enter: view  n: new  e: edit  ctrl+c: quit"
+		return "↑/k up • ↓/j down • / filter • ⏎/enter view • ctrl+n new • ctrl+e edit • ctrl+c quit"
 	case screenViewer:
-		return "esc: back  e: edit  ctrl+c: quit"
+		return "esc back • ctrl+e edit • ctrl+c quit"
 	case screenEditor:
-		return "tab: switch  ctrl+s: save  esc: back  ctrl+c: quit"
+		return "tab switch • ctrl+s save • esc back • ctrl+c quit"
 	default:
-		return "enter: continue  shift+tab: back  ctrl+c: quit"
+		return "⏎/enter continue • shift+tab back • ctrl+c quit"
 	}
 }
 
