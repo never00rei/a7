@@ -75,8 +75,7 @@ func (m *AppModel) startEditorForViewer() {
 
 func (m *AppModel) updateEditorSize() *AppModel {
 	layout := m.layout()
-	paneWidth := layout.EditorPaneWidth()
-	width := layout.PaneContentWidth(paneWidth)
+	width := layout.PaneContentWidth(layout.EditorPaneWidth())
 	if width < 0 {
 		width = 0
 	}
@@ -92,19 +91,15 @@ func (m *AppModel) updateEditorSize() *AppModel {
 	return m
 }
 
-func (m AppModel) editorLayout(layout layout.Layout, titleView string, paneWidth int) (int, int, int) {
-	titlePane := layout.TitledPaneWithWidthAndHeight("Title", titleView, paneWidth, 0)
+func (m AppModel) editorPaneHeights(layout layout.Layout) (int, int) {
+	titlePane := layout.TitledPaneWithWidthAndHeight("Title", m.editorTitle.View(), layout.EditorPaneWidth(), 0)
 	titleHeight := lipgloss.Height(titlePane)
 	totalHeight := layout.BodyHeight()
 	bodyPaneHeight := totalHeight - titleHeight
 	if bodyPaneHeight < 3 {
 		bodyPaneHeight = 3
 	}
-	bodyContentHeight := layout.PaneContentHeight(bodyPaneHeight)
-	if bodyContentHeight < 3 {
-		bodyContentHeight = 3
-	}
-	return titleHeight, bodyPaneHeight, bodyContentHeight
+	return titleHeight, bodyPaneHeight
 }
 
 func (m AppModel) saveEditorNote() (AppModel, tea.Cmd) {
