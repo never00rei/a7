@@ -18,6 +18,7 @@ const (
 	screenWalkthroughStorage
 	screenWalkthroughPrivacy
 	screenSetup
+	screenSettings
 	screenDashboard
 	screenViewer
 	screenEditor
@@ -32,6 +33,7 @@ type AppModel struct {
 	storage   StorageModel
 	privacy   PrivacyModel
 	setup     SetupModel
+	settings  SettingsModel
 	dashboard DashboardModel
 	viewer    ViewerModel
 	editor    EditorModel
@@ -54,6 +56,7 @@ func NewAppModel() AppModel {
 	}
 	model.storage.Form = components.NewStorageForm(&model.config.StoragePath, 0)
 	model.privacy.Form = components.NewPrivacyForm(&model.config.Encrypt, &model.config.SshKeyPath, &model.config.SshPubKeyPath, 0)
+	model.settings.Form = components.NewSettingsForm(&model.config.StoragePath, &model.config.Encrypt, &model.config.SshKeyPath, &model.config.SshPubKeyPath, 0)
 	model.dashboard.List = components.NewNotesList(nil, 0, 0)
 	model.viewer.Viewport = viewport.New(0, 0)
 	model.editor.Title = textinput.New()
@@ -132,6 +135,9 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch msg.String() {
 			case "enter":
 				return m.openViewer()
+			case "s":
+				m.screen = screenSettings
+				return m, m.initActiveFormCmd()
 			case "n":
 				m.startEditorForNew()
 				return m, nil
@@ -142,7 +148,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		switch msg.String() {
 		case "esc":
-			if m.screen == screenViewer || m.screen == screenEditor {
+			if m.screen == screenViewer || m.screen == screenEditor || m.screen == screenSettings {
 				m.screen = screenDashboard
 				return m, nil
 			}
@@ -362,11 +368,13 @@ func (m AppModel) helpText() string {
 	case screenWalkthroughPrivacy:
 		return "⏎/enter/tab next • shift+tab back • s skip • ctrl+c quit"
 	case screenDashboard:
-		return "↑/k up • ↓/j down • / filter • ⏎/enter view • n new • e edit • ctrl+c quit"
+		return "↑/k up • ↓/j down • / filter • ⏎/enter view • n new • e edit • s settings • ctrl+c quit"
 	case screenViewer:
 		return "esc back • e edit • ctrl+c quit"
 	case screenEditor:
 		return "tab switch • ctrl+s save • esc back • ctrl+c quit"
+	case screenSettings:
+		return "tab next • shift+tab back • esc back • ctrl+c quit"
 	default:
 		return "⏎/enter continue • shift+tab back • ctrl+c quit"
 	}

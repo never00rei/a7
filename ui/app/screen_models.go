@@ -24,6 +24,8 @@ func (m *AppModel) activeScreenModel() ScreenModel {
 		return &m.privacy
 	case screenSetup:
 		return &m.setup
+	case screenSettings:
+		return &m.settings
 	case screenDashboard:
 		return &m.dashboard
 	case screenViewer:
@@ -134,6 +136,42 @@ func (m *SetupModel) Update(app *AppModel, msg tea.Msg) (tea.Cmd, bool) {
 
 func (m *SetupModel) View(app *AppModel, layout layout.Layout) string {
 	return screens.Setup(layout, app.config.StoragePath, app.config.SshKeyPath, app.config.Encrypt)
+}
+
+func (m *SettingsModel) Init(app *AppModel) tea.Cmd {
+	if m.Form != nil {
+		return m.Form.Init()
+	}
+	return nil
+}
+
+func (m *SettingsModel) Update(app *AppModel, msg tea.Msg) (tea.Cmd, bool) {
+	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "esc" {
+		app.screen = screenDashboard
+		return nil, true
+	}
+	if m.Form == nil {
+		return nil, false
+	}
+	model, cmd := m.Form.Update(msg)
+	m.Form = model.(*huh.Form)
+	if m.Form.State == huh.StateCompleted {
+		if !app.config.Encrypt {
+			app.config.SshKeyPath = ""
+			app.config.SshPubKeyPath = ""
+		}
+		app.screen = screenDashboard
+		app.resetDashboardNotes()
+		return tea.Batch(app.saveConfigCmd(), app.loadDashboardNotesCmd()), true
+	}
+	if m.Form.State == huh.StateAborted {
+		return tea.Quit, true
+	}
+	return cmd, true
+}
+
+func (m *SettingsModel) View(app *AppModel, layout layout.Layout) string {
+	return screens.Settings(layout, m.Form)
 }
 
 func (m *DashboardModel) Init(app *AppModel) tea.Cmd {
