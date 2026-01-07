@@ -88,6 +88,13 @@ func (m *PrivacyModel) Init(app *AppModel) tea.Cmd {
 
 func (m *PrivacyModel) Update(app *AppModel, msg tea.Msg) (tea.Cmd, bool) {
 	currentScreen := app.screen
+	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "s" {
+		app.config.Encrypt = false
+		app.config.SshKeyPath = ""
+		app.config.SshPubKeyPath = ""
+		app.screen = screenSetup
+		return app.initActiveFormCmd(), true
+	}
 	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "shift+tab" {
 		app.screen = prevScreen(app.screen)
 		return app.initActiveFormCmd(), true
