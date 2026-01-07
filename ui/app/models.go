@@ -18,6 +18,8 @@ type ConfigState struct {
 	Encrypt       bool
 }
 
+type WelcomeModel struct{}
+
 type StorageModel struct {
 	Form *huh.Form
 }
@@ -25,6 +27,8 @@ type StorageModel struct {
 type PrivacyModel struct {
 	Form *huh.Form
 }
+
+type SetupModel struct{}
 
 type DashboardModel struct {
 	List             list.Model

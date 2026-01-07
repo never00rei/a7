@@ -5,12 +5,10 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
 	"github.com/never00rei/a7/config"
 	"github.com/never00rei/a7/journal"
 	"github.com/never00rei/a7/ui/components"
 	"github.com/never00rei/a7/ui/layout"
-	"github.com/never00rei/a7/ui/screens"
 )
 
 type screenID int
@@ -30,8 +28,10 @@ type AppModel struct {
 	width     int
 	height    int
 	config    ConfigState
+	welcome   WelcomeModel
 	storage   StorageModel
 	privacy   PrivacyModel
+	setup     SetupModel
 	dashboard DashboardModel
 	viewer    ViewerModel
 	editor    EditorModel
@@ -67,6 +67,9 @@ func NewAppModel() AppModel {
 func (m AppModel) Init() tea.Cmd {
 	if m.screen == screenDashboard {
 		return m.loadDashboardNotesCmd()
+	}
+	if model := m.activeScreenModel(); model != nil {
+		return model.Init(&m)
 	}
 	return nil
 }
@@ -105,33 +108,12 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.initActiveFormCmd()
 	}
 
-	if updated, cmd, handled := m.updateActiveForm(msg); handled {
-		return updated, cmd
-	}
-
 	var cmds []tea.Cmd
-	if m.screen == screenDashboard {
-		var cmd tea.Cmd
-		m.dashboard.List, cmd = m.dashboard.List.Update(msg)
-		if cmd != nil {
-			cmds = append(cmds, cmd)
+	if model := m.activeScreenModel(); model != nil {
+		cmd, handled := model.Update(&m, msg)
+		if handled {
+			return m, cmd
 		}
-		m = m.updateDashboardSelection()
-	}
-	if m.screen == screenViewer {
-		var cmd tea.Cmd
-		m.viewer.Viewport, cmd = m.viewer.Viewport.Update(msg)
-		if cmd != nil {
-			cmds = append(cmds, cmd)
-		}
-	}
-	if m.screen == screenEditor {
-		var cmd tea.Cmd
-		m.editor.Title, cmd = m.editor.Title.Update(msg)
-		if cmd != nil {
-			cmds = append(cmds, cmd)
-		}
-		m.editor.Body, cmd = m.editor.Body.Update(msg)
 		if cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -238,55 +220,6 @@ func (m AppModel) saveConfigCmd() tea.Cmd {
 	}
 }
 
-func (m AppModel) updateActiveForm(msg tea.Msg) (AppModel, tea.Cmd, bool) {
-	currentScreen := m.screen
-	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "shift+tab" {
-		switch m.screen {
-		case screenWalkthroughStorage, screenWalkthroughPrivacy:
-			m.screen = prevScreen(m.screen)
-			return m, m.initActiveFormCmd(), true
-		}
-	}
-	switch m.screen {
-	case screenWalkthroughStorage:
-		if m.storage.Form == nil {
-			return m, nil, false
-		}
-		model, cmd := m.storage.Form.Update(msg)
-		m.storage.Form = model.(*huh.Form)
-		if m.storage.Form.State == huh.StateCompleted {
-			m.config.StoragePath = m.storage.Form.GetString(components.StoragePathKey)
-			m.screen = nextScreen(m.screen)
-		}
-		if m.storage.Form.State == huh.StateAborted {
-			return m, tea.Quit, true
-		}
-		return m, m.batchFormCmd(cmd, currentScreen), true
-	case screenWalkthroughPrivacy:
-		if m.privacy.Form == nil {
-			return m, nil, false
-		}
-		model, cmd := m.privacy.Form.Update(msg)
-		m.privacy.Form = model.(*huh.Form)
-		if m.privacy.Form.State == huh.StateCompleted {
-			m.config.Encrypt = m.privacy.Form.GetBool(components.EncryptKey)
-			m.config.SshKeyPath = m.privacy.Form.GetString(components.SshKeyPathKey)
-			m.config.SshPubKeyPath = m.privacy.Form.GetString(components.SshPubKeyPathKey)
-			if !m.config.Encrypt {
-				m.config.SshKeyPath = ""
-				m.config.SshPubKeyPath = ""
-			}
-			m.screen = nextScreen(m.screen)
-		}
-		if m.privacy.Form.State == huh.StateAborted {
-			return m, tea.Quit, true
-		}
-		return m, m.batchFormCmd(cmd, currentScreen), true
-	default:
-		return m, nil, false
-	}
-}
-
 func (m AppModel) updateFormWidths() AppModel {
 	layout := m.layout()
 	width := layout.FormWidth()
@@ -316,15 +249,8 @@ func (m AppModel) layout() layout.Layout {
 }
 
 func (m AppModel) initActiveFormCmd() tea.Cmd {
-	switch m.screen {
-	case screenWalkthroughStorage:
-		if m.storage.Form != nil {
-			return m.storage.Form.Init()
-		}
-	case screenWalkthroughPrivacy:
-		if m.privacy.Form != nil {
-			return m.privacy.Form.Init()
-		}
+	if model := m.activeScreenModel(); model != nil {
+		return model.Init(&m)
 	}
 	return nil
 }
@@ -420,26 +346,11 @@ func (m AppModel) updateDashboardSelection() AppModel {
 
 func (m AppModel) View() string {
 	layout := m.layout()
-	switch m.screen {
-	case screenWelcome:
-		return layout.Frame(screens.Welcome(layout), m.helpText())
-	case screenWalkthroughStorage:
-		return layout.Frame(screens.WalkthroughStorage(layout, m.storage.Form), m.helpText())
-	case screenWalkthroughPrivacy:
-		return layout.Frame(screens.WalkthroughPrivacy(layout, m.privacy.Form), m.helpText())
-	case screenSetup:
-		return layout.Frame(screens.Setup(layout, m.config.StoragePath, m.config.SshKeyPath, m.config.Encrypt), m.helpText())
-	case screenDashboard:
-		return layout.Frame(screens.Dashboard(layout, m.config.StoragePath, m.dashboard.Err, m.dashboard.Notes, m.dashboard.List, m.dashboard.SelectedNote, m.dashboard.SelectedErr), m.helpText())
-	case screenViewer:
-		return layout.Frame(screens.Viewer(layout, m.viewer.Title, m.viewer.Viewport.View()), m.helpText())
-	case screenEditor:
-		paneWidth := layout.EditorPaneWidth()
-		_, bodyPaneHeight, _ := m.editorLayout(layout, m.editor.Title.View(), paneWidth)
-		return layout.Frame(screens.Editor(layout, m.editor.Title.View(), m.editor.Body.View(), m.editor.Err, paneWidth, bodyPaneHeight), m.helpText())
-	default:
+	model := m.activeScreenModel()
+	if model == nil {
 		return layout.Frame("unknown screen", m.helpText())
 	}
+	return layout.Frame(model.View(&m, layout), m.helpText())
 }
 
 func (m AppModel) helpText() string {
