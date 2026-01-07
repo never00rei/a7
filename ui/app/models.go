@@ -30,6 +30,10 @@ type PrivacyModel struct {
 
 type SetupModel struct{}
 
+type SettingsModel struct {
+	Form *huh.Form
+}
+
 type DashboardModel struct {
 	List             list.Model
 	Notes            []journal.NoteInfo

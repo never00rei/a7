@@ -21,6 +21,7 @@ From Dashboard:
 - enter → Viewer
 - n → Editor (new)
 - e → Editor (edit selected)
+- s → Settings
 
 Viewer:
 
@@ -41,4 +42,4 @@ Screens:
 5) Dashboard
 6) Viewer
 7) Editor
-8) Settings/About (planned)
+8) Settings
