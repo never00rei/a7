@@ -75,7 +75,8 @@ func (m *AppModel) startEditorForViewer() {
 
 func (m *AppModel) updateEditorSize() *AppModel {
 	layout := m.layout()
-	width := layout.PaneContentWidth(layout.EditorPaneWidth())
+	paneWidth := layout.EditorPaneWidth()
+	width := layout.PaneContentWidth(paneWidth)
 	if width < 0 {
 		width = 0
 	}
@@ -86,13 +87,19 @@ func (m *AppModel) updateEditorSize() *AppModel {
 		bodyWidth = 0
 	}
 	m.editor.Body.SetWidth(bodyWidth)
-	_, _, bodyContentHeight := m.editorLayout(layout, m.editor.Title.View(), paneWidth)
+	titlePane := layout.TitledPaneWithWidthAndHeight("Title", m.editor.Title.View(), paneWidth, 0)
+	titleHeight := lipgloss.Height(titlePane)
+	bodyPaneHeight := layout.BodyHeight() - titleHeight
+	if bodyPaneHeight < 3 {
+		bodyPaneHeight = 3
+	}
+	bodyContentHeight := layout.PaneContentHeight(bodyPaneHeight)
 	m.editor.Body.SetHeight(bodyContentHeight)
 	return m
 }
 
 func (m AppModel) editorPaneHeights(layout layout.Layout) (int, int) {
-	titlePane := layout.TitledPaneWithWidthAndHeight("Title", m.editorTitle.View(), layout.EditorPaneWidth(), 0)
+	titlePane := layout.TitledPaneWithWidthAndHeight("Title", m.editor.Title.View(), layout.EditorPaneWidth(), 0)
 	titleHeight := lipgloss.Height(titlePane)
 	totalHeight := layout.BodyHeight()
 	bodyPaneHeight := totalHeight - titleHeight

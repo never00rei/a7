@@ -229,7 +229,5 @@ func (m *EditorModel) Update(app *AppModel, msg tea.Msg) (tea.Cmd, bool) {
 }
 
 func (m *EditorModel) View(app *AppModel, layout layout.Layout) string {
-	paneWidth := layout.EditorPaneWidth()
-	_, bodyPaneHeight, _ := app.editorLayout(layout, m.Title.View(), paneWidth)
-	return screens.Editor(layout, m.Title.View(), m.Body.View(), m.Err, paneWidth, bodyPaneHeight)
+	return screens.Editor(layout, m.Title.View(), m.Body.View(), m.Err)
 }
