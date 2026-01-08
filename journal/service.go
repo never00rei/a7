@@ -10,8 +10,13 @@ import (
 )
 
 type NoteInfo struct {
-	Filename string
-	ModTime  time.Time
+	Filename  string
+	ModTime   time.Time
+	Title     string
+	Created   time.Time
+	Updated   time.Time
+	Encrypted bool
+	WordCount int
 }
 
 type Note struct {
@@ -57,10 +62,26 @@ func (s *Service) ListNotes() ([]NoteInfo, error) {
 
 	notes := make([]NoteInfo, 0, len(entries))
 	for _, entry := range entries {
-		notes = append(notes, NoteInfo{
-			Filename: entry.Filename,
-			ModTime:  entry.ModTime,
-		})
+		info := NoteInfo{
+			Filename:  entry.Filename,
+			ModTime:   entry.ModTime,
+			WordCount: -1,
+		}
+		content, _, err := s.store.Read(entry.Filename)
+		if err != nil {
+			return nil, err
+		}
+		matter, _ := codec.ParseFrontMatter(content)
+		if matter.Title != "" || !matter.Created.IsZero() || !matter.Updated.IsZero() || matter.Encrypted || matter.WordCount >= 0 {
+			info.Title = matter.Title
+			info.Created = matter.Created
+			info.Updated = matter.Updated
+			info.Encrypted = matter.Encrypted
+			info.WordCount = matter.WordCount
+		} else {
+			info.Title, info.Created, _ = codec.ParseHeader(content)
+		}
+		notes = append(notes, info)
 	}
 	return notes, nil
 }

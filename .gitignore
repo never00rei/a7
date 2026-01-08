@@ -16,6 +16,8 @@
 !*.go
 !go.sum
 !go.mod
+!*.tape
+!*.gif
 
 !README.md
 !LICENSE

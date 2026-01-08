@@ -13,87 +13,93 @@ import (
 )
 
 func (m *AppModel) startEditorForNew() {
-	m.editorFile = ""
-	m.editorCreated = time.Now()
-	m.editorErr = nil
-	m.editorTitle.SetValue("")
-	m.editorBody.SetValue("")
-	m.editorTitle.Focus()
-	m.editorBody.Blur()
+	m.editor.File = ""
+	m.editor.Created = time.Now()
+	m.editor.Err = nil
+	m.editor.Title.SetValue("")
+	m.editor.Body.SetValue("")
+	m.editor.Title.Focus()
+	m.editor.Body.Blur()
 	m.screen = screenEditor
 	m.updateEditorSize()
 }
 
 func (m *AppModel) startEditorForSelected() {
-	if m.storagePath == "" {
+	if m.config.StoragePath == "" {
 		return
 	}
-	item := m.notesList.SelectedItem()
+	item := m.dashboard.List.SelectedItem()
 	noteItem, ok := item.(components.NoteItem)
 	if !ok {
 		return
 	}
-	service := journal.NewService(m.storagePath, journal.WithEncryption(m.encrypt, m.sshKeyPath))
+	service := journal.NewService(m.config.StoragePath, journal.WithEncryption(m.config.Encrypt, m.config.SshKeyPath))
 	note, err := service.LoadNote(noteItem.Info.Filename)
 	if err != nil {
-		m.editorErr = err
+		m.editor.Err = err
 		return
 	}
 
-	m.editorFile = noteItem.Info.Filename
-	m.editorCreated = note.Created
-	if m.editorCreated.IsZero() {
+	m.editor.File = noteItem.Info.Filename
+	m.editor.Created = note.Created
+	if m.editor.Created.IsZero() {
 		if created, ok := components.ParseFilenameTimestamp(noteItem.Info.Filename); ok {
-			m.editorCreated = created
+			m.editor.Created = created
 		}
 	}
-	m.editorErr = nil
-	m.editorTitle.SetValue(note.Title)
-	m.editorBody.SetValue(note.Content)
-	m.editorTitle.Focus()
-	m.editorBody.Blur()
+	m.editor.Err = nil
+	m.editor.Title.SetValue(note.Title)
+	m.editor.Body.SetValue(strings.TrimSuffix(note.Content, "\n"))
+	m.editor.Title.Focus()
+	m.editor.Body.Blur()
 	m.screen = screenEditor
 	m.updateEditorSize()
 }
 
 func (m *AppModel) startEditorForViewer() {
-	if m.viewerNote == nil {
+	if m.viewer.Note == nil {
 		m.startEditorForSelected()
 		return
 	}
-	note := m.viewerNote
-	m.editorFile = note.Filename
-	m.editorCreated = note.Created
-	m.editorErr = nil
-	m.editorTitle.SetValue(note.Title)
-	m.editorBody.SetValue(note.Content)
-	m.editorTitle.Focus()
-	m.editorBody.Blur()
+	note := m.viewer.Note
+	m.editor.File = note.Filename
+	m.editor.Created = note.Created
+	m.editor.Err = nil
+	m.editor.Title.SetValue(note.Title)
+	m.editor.Body.SetValue(strings.TrimSuffix(note.Content, "\n"))
+	m.editor.Title.Focus()
+	m.editor.Body.Blur()
 	m.screen = screenEditor
 	m.updateEditorSize()
 }
 
 func (m *AppModel) updateEditorSize() *AppModel {
 	layout := m.layout()
-	width := layout.PaneContentWidth(layout.EditorPaneWidth())
+	paneWidth := layout.EditorPaneWidth()
+	width := layout.PaneContentWidth(paneWidth)
 	if width < 0 {
 		width = 0
 	}
 
-	m.editorTitle.Width = width
-	m.editorBody.SetWidth(width - 4)
-
-	_, bodyPaneHeight := m.editorPaneHeights(layout)
-	contentHeight := layout.PaneContentHeight(bodyPaneHeight)
-	if contentHeight < 3 {
-		contentHeight = 3
+	m.editor.Title.Width = width
+	bodyWidth := width - 4
+	if bodyWidth < 0 {
+		bodyWidth = 0
 	}
-	m.editorBody.SetHeight(contentHeight)
+	m.editor.Body.SetWidth(bodyWidth)
+	titlePane := layout.TitledPaneWithWidthAndHeight("Title", m.editor.Title.View(), paneWidth, 0)
+	titleHeight := lipgloss.Height(titlePane)
+	bodyPaneHeight := layout.BodyHeight() - titleHeight
+	if bodyPaneHeight < 3 {
+		bodyPaneHeight = 3
+	}
+	bodyContentHeight := layout.PaneContentHeight(bodyPaneHeight)
+	m.editor.Body.SetHeight(bodyContentHeight)
 	return m
 }
 
 func (m AppModel) editorPaneHeights(layout layout.Layout) (int, int) {
-	titlePane := layout.TitledPaneWithWidthAndHeight("Title", m.editorTitle.View(), layout.EditorPaneWidth(), 0)
+	titlePane := layout.TitledPaneWithWidthAndHeight("Title", m.editor.Title.View(), layout.EditorPaneWidth(), 0)
 	titleHeight := lipgloss.Height(titlePane)
 	totalHeight := layout.BodyHeight()
 	bodyPaneHeight := totalHeight - titleHeight
@@ -104,33 +110,33 @@ func (m AppModel) editorPaneHeights(layout layout.Layout) (int, int) {
 }
 
 func (m AppModel) saveEditorNote() (AppModel, tea.Cmd) {
-	if m.storagePath == "" {
-		m.editorErr = fmt.Errorf("journal path is not set")
+	if m.config.StoragePath == "" {
+		m.editor.Err = fmt.Errorf("journal path is not set")
 		return m, nil
 	}
 
-	title := strings.TrimSpace(m.editorTitle.Value())
+	title := strings.TrimSpace(m.editor.Title.Value())
 	if title == "" {
 		title = "Untitled"
 	}
-	body := m.editorBody.Value()
+	body := m.editor.Body.Value()
 
-	service := journal.NewService(m.storagePath, journal.WithEncryption(m.encrypt, m.sshKeyPath))
-	if m.editorFile == "" {
-		_, err := service.SaveNote(title, body, m.editorCreated)
+	service := journal.NewService(m.config.StoragePath, journal.WithEncryption(m.config.Encrypt, m.config.SshKeyPath))
+	if m.editor.File == "" {
+		_, err := service.SaveNote(title, body, m.editor.Created)
 		if err != nil {
-			m.editorErr = err
+			m.editor.Err = err
 			return m, nil
 		}
 	} else {
-		if err := service.UpdateNote(m.editorFile, title, body, m.editorCreated); err != nil {
-			m.editorErr = err
+		if err := service.UpdateNote(m.editor.File, title, body, m.editor.Created); err != nil {
+			m.editor.Err = err
 			return m, nil
 		}
 	}
 
-	m.editorErr = nil
-	m = m.loadDashboardNotes()
+	m.editor.Err = nil
 	m.screen = screenDashboard
-	return m, nil
+	m = m.resetDashboardNotes()
+	return m, m.loadDashboardNotesCmd()
 }
