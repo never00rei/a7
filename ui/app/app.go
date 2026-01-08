@@ -1,6 +1,8 @@
 package app
 
 import (
+	"time"
+
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -335,10 +337,6 @@ func (m AppModel) updateDashboardSelection() AppModel {
 		m.dashboard.SelectedNote = nil
 		m.dashboard.SelectedErr = nil
 		m.dashboard.SelectedFilename = ""
-		return m
-	}
-
-	if noteItem.Info.Filename == m.dashboard.SelectedFilename && m.dashboard.SelectedErr == nil && m.dashboard.SelectedNote != nil {
 		return m
 	}
 
