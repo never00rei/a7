@@ -41,6 +41,7 @@ type DashboardModel struct {
 	SelectedNote     *journal.Note
 	SelectedErr      error
 	SelectedFilename string
+	SelectedModTime  time.Time
 }
 
 type ViewerModel struct {
