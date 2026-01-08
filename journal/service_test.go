@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/never00rei/a7/journal/codec"
 )
 
 func TestSaveLoadAndListNotes(t *testing.T) {
@@ -102,5 +104,47 @@ func TestUpdateNotePreservesFilename(t *testing.T) {
 	}
 	if loaded.Updated.IsZero() {
 		t.Fatalf("Updated missing")
+	}
+}
+
+func TestListNotesLoadsMetadata(t *testing.T) {
+	root := t.TempDir()
+	svc := NewService(root)
+
+	created := time.Date(2024, 4, 5, 6, 7, 0, 0, time.UTC)
+	filename, err := svc.SaveNote("Meta Note", "hello world", created)
+	if err != nil {
+		t.Fatalf("SaveNote: %v", err)
+	}
+
+	notes, err := svc.ListNotes()
+	if err != nil {
+		t.Fatalf("ListNotes: %v", err)
+	}
+
+	var info *NoteInfo
+	for i := range notes {
+		if notes[i].Filename == filename {
+			info = &notes[i]
+			break
+		}
+	}
+	if info == nil {
+		t.Fatalf("ListNotes missing %q", filename)
+	}
+	if info.Title != "Meta Note" {
+		t.Fatalf("Title = %q, want %q", info.Title, "Meta Note")
+	}
+	if !info.Created.Equal(created) {
+		t.Fatalf("Created = %v, want %v", info.Created, created)
+	}
+	if info.Updated.IsZero() {
+		t.Fatalf("Updated missing")
+	}
+	if info.Encrypted {
+		t.Fatalf("Encrypted = true, want false")
+	}
+	if info.WordCount != codec.CountWords("hello world") {
+		t.Fatalf("WordCount = %d, want %d", info.WordCount, codec.CountWords("hello world"))
 	}
 }

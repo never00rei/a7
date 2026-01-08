@@ -18,15 +18,23 @@ type NoteItem struct {
 	Info journal.NoteInfo
 }
 
+// Title() or Description() are used by bubbles/list "NewDefaultDelegate"
+// to display filename and timestamp in the list viewport.
 func (n NoteItem) Title() string {
 	return n.Info.Filename
 }
 
 func (n NoteItem) Description() string {
-	return n.Info.ModTime.Format(time.RFC822)
+	if !n.Info.Created.IsZero() {
+		return n.Info.Created.Local().Format(time.RFC822)
+	}
+	return "Could not determine creation date"
 }
 
 func (n NoteItem) FilterValue() string {
+	if strings.TrimSpace(n.Info.Title) != "" {
+		return fmt.Sprintf("%s %s", n.Info.Title, n.Info.Filename)
+	}
 	return n.Info.Filename
 }
 
@@ -72,28 +80,46 @@ func FormatSelectedMeta(item list.Item, total int, note *journal.Note, loadErr e
 	}
 
 	lines := []string{
-		boldLabel("Selected journal"),
-		noteItem.Info.Filename,
+		boldLabel("Title"),
+		noteTitle(noteItem),
 		"",
 		boldLabel("Last modified"),
-		noteItem.Info.ModTime.Format(time.RFC822),
+		noteItem.Info.ModTime.Local().Format(time.RFC822),
 	}
 
-	if created, ok := ParseFilenameTimestamp(noteItem.Info.Filename); ok {
-		lines = append(lines, "", boldLabel("Created"), created.Format(time.RFC822))
+	created := time.Time{}
+	if note != nil && !note.Created.IsZero() {
+		created = note.Created
+	} else if !noteItem.Info.Created.IsZero() {
+		created = noteItem.Info.Created
+	} else if parsed, ok := ParseFilenameTimestamp(noteItem.Info.Filename); ok {
+		created = parsed
+	}
+	if !created.IsZero() {
+		lines = append(lines, "", boldLabel("Created"), created.Local().Format(time.RFC822))
+	} else {
+		lines = append(lines, "", boldLabel("Created"), "Could not determine creation date")
 	}
 
+	encrypted := noteItem.Info.Encrypted
+	if note != nil {
+		encrypted = note.Encrypted
+	}
 	encryptedLabel := "No"
-	if note != nil && note.Encrypted {
+	if encrypted {
 		encryptedLabel = "Yes"
 	}
 	lines = append(lines, "", boldLabel("Encrypted"), encryptedLabel)
 
-	if loadErr != nil {
+	wordCount := noteItem.Info.WordCount
+	if note != nil && note.WordCount >= 0 {
+		wordCount = note.WordCount
+	}
+	if wordCount >= 0 {
+		lines = append(lines, "", boldLabel("Word count"), fmt.Sprintf("%d", wordCount))
+	} else if loadErr != nil {
 		lines = append(lines, "", boldLabel("Word count"), "Unavailable")
-	} else if note != nil && note.WordCount >= 0 {
-		lines = append(lines, "", boldLabel("Word count"), fmt.Sprintf("%d", note.WordCount))
-	} else if note != nil {
+	} else {
 		lines = append(lines, "", boldLabel("Word count"), "Unavailable")
 	}
 
@@ -104,4 +130,11 @@ func FormatSelectedMeta(item list.Item, total int, note *journal.Note, loadErr e
 
 func boldLabel(label string) string {
 	return metadataLabelStyle.Render(label)
+}
+
+func noteTitle(item NoteItem) string {
+	if strings.TrimSpace(item.Info.Title) != "" {
+		return item.Info.Title
+	}
+	return item.Info.Filename
 }

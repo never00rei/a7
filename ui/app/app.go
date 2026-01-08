@@ -1,8 +1,6 @@
 package app
 
 import (
-	"time"
-
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -319,16 +317,16 @@ func (m AppModel) applyDashboardNotes(msg dashboardNotesMsg) AppModel {
 		m.dashboard.List.Select(0)
 	}
 	m = m.updateDashboardListSize()
-	m = m.updateDashboardSelection()
+	m.updateDashboardSelection()
 	return m
 }
 
-func (m AppModel) updateDashboardSelection() AppModel {
+func (m *AppModel) updateDashboardSelection() {
 	if m.config.StoragePath == "" {
 		m.dashboard.SelectedNote = nil
 		m.dashboard.SelectedErr = nil
 		m.dashboard.SelectedFilename = ""
-		return m
+		return
 	}
 
 	item := m.dashboard.List.SelectedItem()
@@ -337,7 +335,7 @@ func (m AppModel) updateDashboardSelection() AppModel {
 		m.dashboard.SelectedNote = nil
 		m.dashboard.SelectedErr = nil
 		m.dashboard.SelectedFilename = ""
-		return m
+		return
 	}
 
 	service := journal.NewService(m.config.StoragePath, journal.WithEncryption(m.config.Encrypt, m.config.SshKeyPath))
@@ -345,7 +343,6 @@ func (m AppModel) updateDashboardSelection() AppModel {
 	m.dashboard.SelectedFilename = noteItem.Info.Filename
 	m.dashboard.SelectedNote = note
 	m.dashboard.SelectedErr = err
-	return m
 }
 
 func (m AppModel) View() string {
