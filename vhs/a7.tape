@@ -1,13 +1,14 @@
 Output vhs/a7-demo.gif
 
+Set WindowBar Colorful
 Set FontSize 18
 Set Width 1200
 Set Height 720
-Set TypingSpeed 80ms
+Set TypingSpeed 95ms
 
 Type "a7"
 Enter
-Sleep 2s
+Sleep 5s
 
 Enter
 Sleep 1s
