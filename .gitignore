@@ -12,6 +12,10 @@
 !/.pre-commit-config.yaml
 !/.github/
 !/.github/**
+!/build/
+!/build/**
+!/scripts/
+!/scripts/**
 
 !*.go
 !go.sum

@@ -1,13 +1,16 @@
 APP_EXECUTABLE=a7
+BUILD_DIR=build/bin/
+GOOS ?= $(shell go env GOOS)
+GOARCH ?= $(shell go env GOARCH)
+BUILD_TARGET=$(BUILD_DIR)/$(APP_EXECUTABLE)-$(GOOS)-$(GOARCH)
 
 build:
-	GOARCH=amd64 GOOS=darwin go build -o ${APP_EXECUTABLE}-darwin main.go
-	GOARCH=amd64 GOOS=linux go build -o ${APP_EXECUTABLE}-linux main.go
+	mkdir -p "${BUILD_DIR}"
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BUILD_TARGET) main.go
 
 run: build
-	./${APP_EXECUTABLE}
+	./$(BUILD_TARGET)
 
 clean:
 	go clean
-	rm ${APP_EXECUTABLE}-darwin
-	rm ${APP_EXECUTABLE}-linux
+	rm -f $(BUILD_TARGET)
